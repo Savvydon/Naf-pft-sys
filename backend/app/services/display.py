@@ -1,0 +1,97 @@
+from typing import Dict
+
+def print_result(res: Dict):
+    if "error" in res:
+        print("\nERROR:", res["error"])
+        return
+
+    print("\n" + "═"*70)
+    print("                 NAF PFT RESULT")
+    print("═"*70 + "\n")
+
+    print(f"Full Name          : {res.get('full_name', 'N/A')}")
+    print(f"Rank               : {res.get('rank', 'N/A')}")
+    print(f"Service No         : {res.get('svc_no', 'N/A')}")
+    print(f"Unit               : {res.get('unit', 'N/A')}")
+    print(f"Appointment        : {res.get('appointment', 'N/A')}")
+    print(f"Age                : {res.get('age', 'N/A')}")
+    print(f"Sex                : {res.get('sex', 'N/A')}")
+    print(f"Date               : {res.get('date', 'N/A')}")
+    print(f"Height             : {res.get('height', 'N/A')} m")
+    print(f"Cardio Type        : {res.get('cardio_type', 'N/A')}")
+    print()
+
+    print("Body Weight Status:")
+    print(f"  Current weight   : {res.get('weight_current', 'N/A')} kg")
+    print(f"  Ideal weight     : {res.get('weight_ideal', 'N/A')} kg")
+    print(f"  Excess weight    : {res.get('weight_excess', 'N/A')} kg")
+    print(f"  Weight deficit   : {res.get('weight_deficit', 'N/A')} kg")
+    print(f"  Weight status    : {res.get('weight_status', 'N/A')}")
+    print()
+
+    print("Body Mass Index Status:")
+    print(f"  Current BMI      : {res.get('bmi_current', 'N/A')}")
+    print(f"  Ideal BMI        : {res.get('bmi_ideal', 'N/A')}")
+    print(f"  Excess BMI       : {res.get('bmi_excess', 0):.1f}")
+    print(f"  BMI deficit      : {res.get('bmi_deficit', 0):.1f}")
+    print(f"  BMI status       : {res.get('bmi_status', 'N/A')}")
+    print()
+
+    print("Cardiovascular Endurance Status:")
+    print(f"  Time taken       : {res.get('cardio_time', 'N/A')}")
+    print(f"  Ideal time       : {res.get('cardio_ideal', 'N/A')} min")
+    print(f"  Status           : {res.get('cardio_status', 'N/A')}")
+    print()
+
+    print("Cardiovascular Endurance 2 Status (Step-Up):")
+    print(f"  Reps             : {res.get('step_up_value', 'N/A')}")
+    print(f"  Ideal            : {res.get('step_up_ideal', 'N/A')}")
+    print(f"  Optimum          : {res.get('step_up_optimum', 'N/A')}")
+    print(f"  Status           : {res.get('step_up_status', 'N/A')}")
+    print()
+
+    print("Muscular Strength Status (Push-Up):")
+    print(f"  Reps             : {res.get('push_up_value', 'N/A')}")
+    print(f"  Ideal            : {res.get('push_up_ideal', 'N/A')}")
+    print(f"  Shortfall        : {res.get('push_up_shortfall', 'N/A')}")
+    print(f"  Status           : {res.get('push_up_status', 'N/A')}")
+    print()
+
+    print("Muscular Endurance Status (Sit-Up):")
+    print(f"  Reps             : {res.get('sit_up_value', 'N/A')}")
+    print(f"  Ideal            : {res.get('sit_up_ideal', 'N/A')}")
+    print(f"  Excess           : {res.get('sit_up_excess', 'N/A')}")
+    print(f"  Status           : {res.get('sit_up_status', 'N/A')}")
+    print()
+
+    print("Muscular Endurance 2 Status (Chin-Up):")
+    print(f"  Reps             : {res.get('chin_up_value', 'N/A')}")
+    print(f"  Ideal            : {res.get('chin_up_ideal', 'N/A')}")
+    print(f"  Deficit          : {res.get('chin_up_deficit', 'N/A')}")
+    print(f"  Status           : {res.get('chin_up_status', 'N/A')}")
+    print()
+
+    print("SRS (Sit & Reach):")
+    print(f"  Reach (cm)       : {res.get('sit_reach_value', 'N/A')}")
+    print(f"  Ideal            : {res.get('sit_reach_ideal', 'N/A')}")
+    print(f"  Shortfall        : {res.get('sit_reach_deficit', 'N/A')}")
+    print(f"  Status           : {res.get('sit_reach_status', 'N/A')}")
+    print()
+
+    print("Points Breakdown:")
+    print(f"  Cardio (2.4km/5km) : {res.get('cardio_points', 0):2d} pts")
+    print(f"  3-Min Step-Up      : {res.get('step_up_points', 0):2d} pts")
+    print(f"  1-Min Push-Up      : {res.get('push_up_points', 0):2d} pts")
+    print(f"  1-Min Sit-Up       : {res.get('sit_up_points', 0):2d} pts")
+    print(f"  Chin-Up            : {res.get('chin_up_points', 0):2d} pts")
+    print(f"  Sit & Reach        : {res.get('sit_reach_points', 0):2d} pts")
+    print(f"  BMI                : {res.get('bmi_points', 0):2d} pts")
+    print()
+
+    print(f"Aggregate Score      : {res.get('aggregate', 'N/A')}")
+    print(f"Grade                : {res.get('grade', 'N/A')}")
+    print(f"Prescription         : Duration → {res.get('prescription_duration', 'N/A')}")
+    print(f"                     : Days     → {res.get('prescription_days', 'N/A')}")
+    print(f"Recommended Activity : {res.get('recommended_activity', 'N/A')}")
+
+    print("═"*70 + "\n")

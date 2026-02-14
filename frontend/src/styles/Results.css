@@ -1,0 +1,218 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f5f7fa;
+  color: #2c3e50;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* Main container */
+.results {
+  max-width: 900px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  border: 1px solid #ebedf2;
+}
+
+
+.results h2 {
+  text-align: center;
+  color: #0a3d62;
+  font-size: 2.1rem;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 3px solid #27ae60;
+  letter-spacing: 0.5px;
+}
+
+.results h3 {
+  color: #2c3e50;
+  font-size: 1.4rem;
+  margin: 2rem 0 1rem;
+  padding-left: 0.8rem;
+  border-left: 5px solid #27ae60;
+  position: relative;
+}
+
+
+.results p {
+  margin: 0.9rem 0;
+  font-size: 1.05rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  padding: 0.5rem 0.8rem;
+  border-radius: 8px;
+  transition: background-color 0.2s;
+}
+
+.results p:hover {
+  background-color: #f8fafc;
+}
+
+.results p b {
+  color: #0a3d62;
+  min-width: 180px; /* better alignment on desktop */
+  font-weight: 600;
+}
+
+/* Status values - color coding */
+.results p b + span,
+.results p b + strong {
+  font-weight: 500;
+}
+
+/* Color-coded status */
+p:has(b + span:where(:contains("Excellent"), :contains("Good"), :contains("Pass"), :contains("Optimum"))) {
+  background-color: #e8f5e9;
+  border-left: 5px solid #27ae60;
+}
+
+p:has(b + span:where(:contains("Average"), :contains("Fair"))) {
+  background-color: #fff3e0;
+  border-left: 5px solid #f39c12;
+}
+
+p:has(b + span:where(:contains("Poor"), :contains("Fail"), :contains("Deficit"), :contains("Excess"))) {
+  background-color: #ffebee;
+  border-left: 5px solid #c0392b;
+}
+
+/* Aggregate & Remark - make them stand out */
+p:has(b:contains("Aggregate")),
+p:has(b:contains("Performance Remark")) {
+  font-size: 1.25rem;
+  font-weight: 600;
+  padding: 1.2rem;
+  margin: 1.5rem 0;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #f6f9fc, #eef2f7);
+  border: 2px solid #3498db;
+  text-align: center;
+}
+
+
+h3 + p:has(b:contains("Recommended")) {
+  font-size: 1.1rem;
+  padding: 1rem 1.2rem;
+  background: #e8f4fd;
+  border-radius: 10px;
+  border-left: 6px solid #3498db;
+  margin: 0.8rem 0;
+}
+
+.action-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  margin: 1rem 0 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e0e0e0;
+}
+
+.btn {
+  padding: 0.9rem 1.5rem;
+  font-size: 1.05rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 180px;
+  text-align: center;
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.pdf-btn {
+  background-color: #2e7d32; /* green */
+  color: white;
+}
+
+.pdf-btn:hover {
+  background-color: #1b5e20;
+}
+
+.email-btn {
+  background-color: #1976d2; /* blue */
+  color: white;
+}
+
+.email-btn:hover {
+  background-color: #0d47a1;
+}
+
+.home-btn {
+  background-color: #616161; /* gray */
+  color: white;
+}
+
+.home-btn:hover {
+  background-color: #424242;
+}
+
+
+@media (max-width: 768px) {
+  .results {
+    margin: 1rem;
+    padding: 1.5rem;
+    border-radius: 12px;
+  }
+
+  .results h2 {
+    font-size: 1.7rem;
+  }
+
+  .results h3 {
+    font-size: 1.3rem;
+  }
+
+  .results p {
+    font-size: 1rem;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+
+  .results p b {
+    min-width: auto;
+  }
+
+  p:has(b + span:where(:contains("Excellent"), :contains("Good"))) {
+    border-left: none;
+    border-top: 4px solid #27ae60;
+  }
+
+  p:has(b + span:where(:contains("Poor"), :contains("Fail"))) {
+    border-left: none;
+    border-top: 4px solid #c0392b;
+  }
+}
+
+@media (max-width: 480px) {
+  .results {
+    padding: 1.2rem;
+  }
+
+  .results h2 {
+    font-size: 1.5rem;
+  }
+
+  p:has(b:contains("Aggregate")),
+  p:has(b:contains("Performance Remark")) {
+    font-size: 1.15rem;
+    padding: 1rem;
+  }
+}
