@@ -1,4 +1,4 @@
-const BASE_URL = "https://naf-pft-backend.onrender.com/api";
+const BASE_URL = "https://naf-pft-sys.onrender.com/api";
 
 export async function computeFitness(payload) {
   const response = await fetch(`${BASE_URL}/compute`, {
