@@ -6,10 +6,12 @@ export function usePhysicalFitness() {
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
+    year: "",
     fullName: "",
     rank: "",
     svcNo: "NAF",
     unit: "",
+    email: "",
     appointment: "",
     age: "",
     sex: "male",
@@ -23,6 +25,8 @@ export function usePhysicalFitness() {
     sitUp: "",
     chinUp: "",
     sitReach: "",
+    evaluatorName: "",
+    evaluatorRank: "",
   });
 
   const ranks = [
@@ -63,10 +67,12 @@ export function usePhysicalFitness() {
     e.preventDefault();
 
     const payload = {
+      year: formData.year,
       full_name: formData.fullName,
       rank: formData.rank,
       svc_no: formData.svcNo,
       unit: formData.unit,
+      email: formData.email,
       appointment: formData.appointment,
       age: Number(formData.age),
       sex: formData.sex?.toLowerCase() || "male",
@@ -80,6 +86,8 @@ export function usePhysicalFitness() {
       sit_up: Number(formData.sitUp),
       chin_up: Number(formData.chinUp),
       sit_reach: Number(formData.sitReach),
+      evaluator_name: formData.evaluatorName,
+      evaluator_rank: formData.evaluatorRank,
     };
 
     const result = await computeFitness(payload);

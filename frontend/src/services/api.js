@@ -9,9 +9,9 @@ export async function computeFitness(payload) {
     body: JSON.stringify(payload),
   });
 
-  if (!response.ok) {
-    throw new Error("Failed to compute fitness");
-  }
+   if (!response.ok) {
+     throw new Error("Failed to compute fitness");
+   }
 
   return response.json();
 }

@@ -7,7 +7,7 @@ import Header from "./results/Header";
 import PersonalInfo from "./results/PersonalInfo";
 import StatusGroups from "./results/StatusGroups";
 import ActionButtons from "./results/ActionButtons";
-
+import OverallRecommendation from "./results/OverallRecommendation";
 
 import "../styles/Results.css";
 
@@ -51,14 +51,21 @@ export default function Results() {
       const imgX = (pdfWidth - imgWidth * ratio) / 2;
       const imgY = 8;
 
-      pdf.addImage(imgData, "PNG", imgX, imgY, imgWidth * ratio, imgHeight * ratio);
-      pdf.save(`NAF_PFT_${state.svc_no || state.full_name?.replace(/\s+/g, "_") || "result"}.pdf`);
+      pdf.addImage(
+        imgData,
+        "PNG",
+        imgX,
+        imgY,
+        imgWidth * ratio,
+        imgHeight * ratio,
+      );
+      pdf.save(
+        `NAF_PFT_${state.svc_no || state.full_name?.replace(/\s+/g, "_") || "result"}.pdf`,
+      );
     } catch (err) {
       console.error("PDF generation failed:", err);
     }
   };
-
-  
 
   const goToHome = () => {
     navigate("/");
@@ -70,12 +77,10 @@ export default function Results() {
         <Header />
         <PersonalInfo state={state} />
         <StatusGroups state={state} />
+        <OverallRecommendation />
       </div>
 
-      <ActionButtons
-        onDownload={downloadPDF}  
-        onHome={goToHome}
-      />
+      <ActionButtons onDownload={downloadPDF} onHome={goToHome} />
     </>
   );
 }

@@ -208,6 +208,26 @@ export function PhysicalFitnessForm({
           required
         />
       </div>
+      <div>
+        <label>Evaluator Name:</label>
+        <input
+          name="evaluatorName"
+          type="text"
+          placeholder="Enter Name"
+          onChange={handleChange}
+          required
+        />
+      </div>
+      <div>
+        <label>Evaluator Rank:</label>
+        <select name="evaluatorRank" onChange={handleChange} required>
+          <option value="">Select Rank</option>
+          {ranks.map((r) => (
+            <option key={r}>{r}</option>
+          ))}
+        </select>
+      </div>
+
       <button type="submit" className="submit-btn">
         {" "}
         Submit Form{" "}
