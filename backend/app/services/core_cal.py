@@ -159,7 +159,7 @@ def compute_naf_pft(data) -> Dict:
         "rank": data.rank,
         "svc_no": data.svc_no,
         "unit": data.unit,
-        "year": data.unit,
+        "year": data.year,
         "appointment": data.appointment,
         "age": data.age,
         "sex": data.sex.upper(),
