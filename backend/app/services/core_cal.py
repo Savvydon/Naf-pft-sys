@@ -162,6 +162,7 @@ def compute_naf_pft(data) -> Dict:
         "year": data.year,
         "appointment": data.appointment,
         "age": data.age,
+        "date": data.date,
         "sex": data.sex.upper(),
         "height": data.height,
         "cardio_type": cardio_cfg["type"],
