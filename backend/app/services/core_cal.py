@@ -159,12 +159,13 @@ def compute_naf_pft(data) -> Dict:
         "rank": data.rank,
         "svc_no": data.svc_no,
         "unit": data.unit,
+        "year": data.unit,
         "appointment": data.appointment,
         "age": data.age,
         "sex": data.sex.upper(),
         "height": data.height,
         "cardio_type": cardio_cfg["type"],
-
+        "email": data.email,
         "weight_current": round(data.weight, 1),
         "weight_ideal": round(ideal_weight, 1),
         "weight_excess": round(max(0, weight_diff), 1),
@@ -218,5 +219,7 @@ def compute_naf_pft(data) -> Dict:
         "grade": grade,
         "prescription_duration": prescription[0],
         "prescription_days": prescription[1],
-        "recommended_activity": recommended_activity
+        "recommended_activity": recommended_activity,
+        "evaluator_name": data.evaluator_name,
+        "evaluator_rank": data.evaluator_rank
     }

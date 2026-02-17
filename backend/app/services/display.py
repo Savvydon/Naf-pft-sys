@@ -9,12 +9,14 @@ def print_result(res: Dict):
     print("                 NAF PFT RESULT")
     print("═"*70 + "\n")
 
+    print(f"Year               : {res.get('year', 'N/A')}")
     print(f"Full Name          : {res.get('full_name', 'N/A')}")
     print(f"Rank               : {res.get('rank', 'N/A')}")
     print(f"Service No         : {res.get('svc_no', 'N/A')}")
     print(f"Unit               : {res.get('unit', 'N/A')}")
-    print(f"Appointment        : {res.get('appointment', 'N/A')}")
     print(f"Age                : {res.get('age', 'N/A')}")
+    print(f"Appointment        : {res.get('appointment', 'N/A')}")
+    print(f"Email              : {res.get('email', 'N/A')}")
     print(f"Sex                : {res.get('sex', 'N/A')}")
     print(f"Date               : {res.get('date', 'N/A')}")
     print(f"Height             : {res.get('height', 'N/A')} m")
@@ -93,5 +95,7 @@ def print_result(res: Dict):
     print(f"Prescription         : Duration → {res.get('prescription_duration', 'N/A')}")
     print(f"                     : Days     → {res.get('prescription_days', 'N/A')}")
     print(f"Recommended Activity : {res.get('recommended_activity', 'N/A')}")
+    print(f"Evaluator Name          : {res.get('evaluator_name', 'N/A')}")
+    print(f"Evaluator Rank               : {res.get('evaluator_rank', 'N/A')}")
 
     print("═"*70 + "\n")

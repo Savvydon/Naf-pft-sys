@@ -5,12 +5,20 @@ def get_user_input():
         pass
 
     d = Data()
-
+    d.year         = input("Year").strip()
     d.full_name    = input("Full Name: ").strip()
     d.rank         = input("Rank: ").strip()
     d.svc_no       = input("Service Number: ").strip()
     d.unit         = input("Unit: ").strip()
     d.appointment  = input("Appointment: ").strip()
+    d.date = input("Date (mm-dd-yyyy): ").strip()
+
+    while True:
+        email = input("Email Address: ").strip()
+        if "@" in email and "." in email.split("@")[-1] and len(email) > 5:
+            d.email = email
+            break
+        print("Please enter a valid email address (e.g. name@example.com).")
 
     while True:
         try:
@@ -19,6 +27,7 @@ def get_user_input():
         except:
             pass
         print("Enter valid age.")
+
 
     while True:
         sex = input("Sex (male/female): ").strip().lower()
