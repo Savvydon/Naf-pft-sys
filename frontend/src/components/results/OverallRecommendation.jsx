@@ -1,6 +1,6 @@
 import "../../styles/Recommendation.css";
 
-export default function OverallRecommendation({ evaluatorName = "" }) {
+export default function OverallRecommendation({ state }) {
   return (
     <section className="recommendations">
       <h3 className="section-title">Overall Recommendations</h3>
@@ -66,13 +66,15 @@ export default function OverallRecommendation({ evaluatorName = "" }) {
       </div>
 
       <div className="evaluator-row">
-        <span>
-          <strong>Name of Fitness Evaluator:</strong>{" "}
-          {evaluatorName || ".............................."}
-        </span>
-        <span>
-          <strong>Signature:</strong> ..............................
-        </span>
+        <p>
+          <strong>Evaluator name:</strong> {state.evaluator_name || "N/A"}
+        </p>
+        <p>
+          <strong>Evaluator Rank:</strong> {state.evaluator_rank || "N/A"}
+        </p>
+        <p>
+          <strong>Signature:</strong> .............................
+        </p>
       </div>
     </section>
   );
