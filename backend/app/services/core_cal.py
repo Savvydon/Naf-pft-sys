@@ -144,7 +144,7 @@ def compute_naf_pft(data) -> Dict:
     elif aggregate >= 75:
         grade = "Good"
         prescription = "1-35 minute(s)", "3-4 day per week"
-        recommended_activity = "AAerobic activities of moderate intensity: Tennis single, low aerobic dance and  fast walking."
+        recommended_activity = "Aerobic activities of moderate intensity: Tennis single, low aerobic dance and  fast walking."
     elif aggregate >= 70:
         grade = "Marginal"
         prescription = "36-45 minutes", "3-4 day per week"
