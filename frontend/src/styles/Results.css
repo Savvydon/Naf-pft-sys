@@ -5,7 +5,7 @@
 }
 
 body {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   background-color: #f5f7fa;
   color: #2c3e50;
   line-height: 1.6;
@@ -22,7 +22,6 @@ body {
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
   border: 1px solid #ebedf2;
 }
-
 
 .results h2 {
   text-align: center;
@@ -42,7 +41,6 @@ body {
   border-left: 5px solid #27ae60;
   position: relative;
 }
-
 
 .results p {
   margin: 0.9rem 0;
@@ -72,7 +70,15 @@ body {
 }
 
 /* Color-coded status */
-p:has(b + span:where(:contains("Excellent"), :contains("Good"), :contains("Pass"), :contains("Optimum"))) {
+p:has(
+  b
+    + span:where(
+      :contains("Excellent"),
+      :contains("Good"),
+      :contains("Pass"),
+      :contains("Optimum")
+    )
+) {
   background-color: #e8f5e9;
   border-left: 5px solid #27ae60;
 }
@@ -82,7 +88,15 @@ p:has(b + span:where(:contains("Average"), :contains("Fair"))) {
   border-left: 5px solid #f39c12;
 }
 
-p:has(b + span:where(:contains("Poor"), :contains("Fail"), :contains("Deficit"), :contains("Excess"))) {
+p:has(
+  b
+    + span:where(
+      :contains("Poor"),
+      :contains("Fail"),
+      :contains("Deficit"),
+      :contains("Excess")
+    )
+) {
   background-color: #ffebee;
   border-left: 5px solid #c0392b;
 }
@@ -100,7 +114,6 @@ p:has(b:contains("Performance Remark")) {
   text-align: center;
 }
 
-
 h3 + p:has(b:contains("Recommended")) {
   font-size: 1.1rem;
   padding: 1rem 1.2rem;
@@ -108,6 +121,21 @@ h3 + p:has(b:contains("Recommended")) {
   border-radius: 10px;
   border-left: 6px solid #3498db;
   margin: 0.8rem 0;
+}
+
+/* Normal page styles stay the same */
+
+/* Force desktop layout for PDF */
+
+.pdf-mode {
+  width: 794px; /* A4 width at 96 DPI */
+  max-width: none;
+  margin: 0 auto;
+}
+
+/* Prevent mobile stacking */
+.pdf-mode * {
+  box-sizing: border-box;
 }
 
 .action-buttons {
@@ -164,7 +192,6 @@ h3 + p:has(b:contains("Recommended")) {
   background-color: #424242;
 }
 
-
 @media (max-width: 768px) {
   .results {
     margin: 1rem;
@@ -199,20 +226,42 @@ h3 + p:has(b:contains("Recommended")) {
     border-left: none;
     border-top: 4px solid #c0392b;
   }
+
+  /* Normal page styles stay the same */
+
+  /* Force desktop layout for PDF */
+
+  .pdf-mode {
+    width: 794px;
+  }
 }
 
 @media (max-width: 480px) {
+  body {
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f5f7fa;
+    color: #2c3e50;
+    line-height: 1;
+    min-height: 100vh;
+  }
   .results {
     padding: 1.2rem;
   }
 
+  .results p {
+    margin: 0.3rem 0;
+  }
+
   .results h2 {
-    font-size: 1.5rem;
+    font-size: 1.3rem;
   }
 
   p:has(b:contains("Aggregate")),
   p:has(b:contains("Performance Remark")) {
     font-size: 1.15rem;
     padding: 1rem;
+  }
+  .pdf-mode {
+    width: 794px;
   }
 }

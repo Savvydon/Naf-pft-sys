@@ -28,12 +28,16 @@ export default function Results() {
     if (!input) return;
 
     try {
+      // force desktop layout
+      input.classList.add("pdf-mode");
+      //Allowing browser to reflow layout
       await new Promise((resolve) => setTimeout(resolve, 400));
 
       const canvas = await html2canvas(input, {
         scale: 2,
         useCORS: true,
         backgroundColor: "#ffffff",
+        windowWidth: 924, // Force desktop width
       });
 
       const imgData = canvas.toDataURL("image/png");
