@@ -123,6 +123,22 @@ h3 + p:has(b:contains("Recommended")) {
   margin: 0.8rem 0;
 }
 
+/* Personal info styling */
+.personal-info {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem 2rem;
+  margin-bottom: 1.5rem;
+}
+
+.personal-info p {
+  margin: 0;
+  padding: 0.5rem 0.8rem;
+  border-radius: 8px;
+  display: flex;
+  gap: 0.5rem;
+}
+
 /* Normal page styles stay the same */
 
 /* Force desktop layout for PDF */
@@ -226,7 +242,11 @@ h3 + p:has(b:contains("Recommended")) {
     border-left: none;
     border-top: 4px solid #c0392b;
   }
+  /* Mobile fallback */
 
+  .personal-info {
+    grid-template-columns: 1fr;
+  }
   /* Normal page styles stay the same */
 
   /* Force desktop layout for PDF */

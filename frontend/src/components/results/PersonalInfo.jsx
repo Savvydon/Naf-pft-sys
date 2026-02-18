@@ -1,6 +1,6 @@
 export default function PersonalInfo({ state }) {
   return (
-    <>
+    <div className="personal-info">
       <p>
         <b>Year:</b> {state.year || "N/A"}
       </p>
@@ -37,6 +37,6 @@ export default function PersonalInfo({ state }) {
       <p>
         <b>Cardio Type:</b> {state.cardio_type || "N/A"}
       </p>
-    </>
+    </div>
   );
 }

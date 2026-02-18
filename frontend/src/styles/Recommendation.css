@@ -25,13 +25,6 @@
   margin: 0.2rem 0;
 }
 
-.evaluator-row {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 1rem;
-  font-weight: 600;
-}
-
 /* PRINT / PDF */
 @media print {
   body {
