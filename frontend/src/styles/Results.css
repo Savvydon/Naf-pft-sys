@@ -140,9 +140,7 @@ h3 + p:has(b:contains("Recommended")) {
 }
 
 /* Normal page styles stay the same */
-
 /* Force desktop layout for PDF */
-
 .pdf-mode {
   width: 794px; /* A4 width at 96 DPI */
   max-width: none;
@@ -243,14 +241,11 @@ h3 + p:has(b:contains("Recommended")) {
     border-top: 4px solid #c0392b;
   }
   /* Mobile fallback */
-
   .personal-info {
     grid-template-columns: 1fr;
   }
   /* Normal page styles stay the same */
-
   /* Force desktop layout for PDF */
-
   .pdf-mode {
     width: 794px;
   }
