@@ -39,7 +39,7 @@ export default function StatusGroups({ state }) {
         </p>
       </div>
 
-      <h3>Cardiovascular Endurance</h3>
+      <h3>Cardiovascular Endurance Status</h3>
       <div className="personal-info">
         <p>
           <b>Time Taken:</b> {state.cardio_time || "N/A"}
@@ -52,7 +52,7 @@ export default function StatusGroups({ state }) {
         </p>
       </div>
 
-      <h3>Cardiovascular endurance status (step-up)</h3>
+      <h3>Cardiovascular Endurance (step-up) Status</h3>
       <div className="personal-info">
         <p>
           <b>Numbers of step-ups:</b> {state.step_up_value || "N/A"}
@@ -68,7 +68,7 @@ export default function StatusGroups({ state }) {
         </p>
       </div>
 
-      <h3>Muscular Strength Status (Push-Up)</h3>
+      <h3>Muscular Strength (Push-Up) Status</h3>
       <div className="personal-info">
         <p>
           <b>Numbers of Push-up:</b> {state.push_up_value || "N/A"}
@@ -82,8 +82,10 @@ export default function StatusGroups({ state }) {
         <p>
           <b>Status:</b> {state.push_up_status || "N/A"}
         </p>
+      </div>
 
-        <h3>Muscular Endurance Status (Sit-Up)</h3>
+      <h3>Muscular Endurance (Sit-Up) Status</h3>
+      <div className="personal-info">
         <p>
           <b>Numbers of sit-up:</b> {state.sit_up_value || "N/A"}
         </p>
@@ -98,7 +100,7 @@ export default function StatusGroups({ state }) {
         </p>
       </div>
 
-      <h3>Muscular Endurance 2 Status (Chin-Up)</h3>
+      <h3>Muscular Endurance 2 (Chin-Up) Status</h3>
       <div className="personal-info">
         <p>
           <b>Numbers of chin-up:</b> {state.chin_up_value || "N/A"}
