@@ -55,7 +55,7 @@ export function usePhysicalFitness() {
     const { name, value } = e.target;
 
     if (name === "svcNo") {
-      const cleaned = value.replace(/\s/g, "").replace(/[^a-zA-Z0-9]/g, "");
+      const cleaned = value.replace(/\s/g, "").replace(/[^a-zA-Z0-9/]/g, "");
       const formatted = cleaned.startsWith("NAF") ? cleaned : `NAF${cleaned}`;
       return setFormData((prev) => ({ ...prev, svcNo: formatted }));
     }

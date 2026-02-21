@@ -12,7 +12,7 @@ export default function PhysicalFitness() {
         <div className="header">
           <img src={airForce} alt="NAF Logo" />
           <h1>
-            NIGERIA AIR FORCE ANNUAL PHYSICAL FITNESS TEST INTERPRETATION FORM
+            NIGERIAN AIR FORCE ANNUAL PHYSICAL FITNESS TEST INTERPRETATION FORM
           </h1>
         </div>
         <PhysicalFitnessForm

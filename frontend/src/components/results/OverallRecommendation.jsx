@@ -67,15 +67,16 @@ export default function OverallRecommendation({ state }) {
 
       <div className="personal-info">
         <p>
-          <strong>Evaluator name:</strong> {state.evaluator_name || "N/A"}
+          <strong>Evaluator name:</strong> {state.evaluator_name || "NIL"}
         </p>
         <p>
-          <strong>Evaluator Rank:</strong> {state.evaluator_rank || "N/A"}
+          <strong>Evaluator Rank:</strong> {state.evaluator_rank || "NIL"}
         </p>
       </div>
-      <p>
+      //Not needed again for now
+      {/* <p>
         <strong>Signature:</strong> .............................
-      </p>
+      </p> */}
     </section>
   );
 }
