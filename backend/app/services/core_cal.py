@@ -234,14 +234,9 @@ def time_to_minutes(minutes: int, seconds: int = 0) -> float:
 
 
 def get_points(value: float, ranges: list) -> int:
-    if not ranges:
-        return 0
-    ranges = sorted(ranges, key=lambda x: x[0])
     for low, high, pts in ranges:
         if low <= value <= high:
             return pts
-    if value > ranges[-1][1]:
-        return ranges[-1][2]
     return 0
 
 
@@ -254,142 +249,80 @@ def determine_age_group(age: int) -> str:
         return "40-49"
     elif 50 <= age <= 59:
         return "50-59"
-    elif age >= 60:
-        return "60+"
-    raise ValueError(f"Age group not yet supported for age {age}")
+    return "60+"
 
 
 def compute_bmi(weight_kg: float, height_m: float) -> float:
-    if height_m <= 0:
-        return 0.0
-    return weight_kg / (height_m ** 2)
+    return weight_kg / (height_m ** 2) if height_m > 0 else 0.0
 
 
 def compute_ideal_weight(height_m: float, gender: str) -> float:
     height_cm = height_m * 100
-    if gender == "male":
-        return 50 + 0.91 * (height_cm - 152.4)
-    return 45.5 + 0.91 * (height_cm - 152.4)
+    return (50 if gender == "male" else 45.5) + 0.91 * (height_cm - 152.4)
 
 
-# =========================
-# 🔥 FIXED BMI LOGIC HERE
-# =========================
-def get_component_status(component: str, value: float, cfg: dict, is_time: bool = False) -> dict:
-    ideal = cfg["ideal"]
-    points = get_points(value, cfg["ranges"])
+# 🔥 BMI IS HANDLED HERE — SEPARATELY
+def compute_bmi_status(bmi: float, bmi_cfg: dict) -> dict:
+    ideal_min, ideal_max = bmi_cfg["ideal"]
+    points = get_points(bmi, bmi_cfg["ranges"])
+
+    if bmi < ideal_min:
+        ideal = ideal_min
+        deficit = round(ideal_min - bmi, 2)
+        excess = 0
+    elif bmi > ideal_max:
+        ideal = ideal_max
+        excess = round(bmi - ideal_max, 2)
+        deficit = 0
+    else:
+        ideal = round(bmi, 2)
+        excess = deficit = 0
 
     status = (
-        "Excellent" if points >= 8 else
-        "Good" if points >= 5 else
-        "Fair" if points >= 2 else
+        "Excellent" if points >= 15 else
+        "Good" if points >= 10 else
+        "Fair" if points >= 5 else
         "Needs Improvement"
     )
 
-    result = {
-        "value": round(value, 2) if not is_time else f"{int(value)}:{int((value % 1) * 60):02d}",
+    return {
+        "current": round(bmi, 1),
+        "ideal": ideal,
+        "excess": excess,
+        "deficit": deficit,
         "points": points,
         "status": status
     }
 
-    # Higher is better
-    if cfg["type"] == "Higher is better":
-        result["ideal"] = ideal
-        result["shortfall"] = max(0, ideal - value)
-
-        if component == "sit_up_1min":
-            result["excess"] = max(0, value - ideal)
-
-        if component == "step_up_3min":
-            result["optimum"] = cfg.get("optimum", ideal + 10)
-
-    # ✅ BMI (Closer to ideal RANGE)
-    elif cfg["type"] == "Closer to ideal":
-        ideal_min, ideal_max = ideal
-
-        if value < ideal_min:
-            result["ideal"] = ideal_min
-            result["deficit"] = round(ideal_min - value, 2)
-            result["excess"] = 0
-        elif value > ideal_max:
-            result["ideal"] = ideal_max
-            result["excess"] = round(value - ideal_max, 2)
-            result["deficit"] = 0
-        else:
-            result["ideal"] = round(value, 2)
-            result["excess"] = 0
-            result["deficit"] = 0
-
-    # Cardio (lower is better)
-    else:
-        result["ideal"] = ideal
-        result["excess_time"] = max(0, value - ideal)
-
-    return result
-
 
 def compute_naf_pft(data) -> Dict:
     gender = data.sex.lower()
-    if gender not in ("male", "female"):
-        return {"error": "Gender must be 'male' or 'female'"}
-
     age_group = determine_age_group(data.age)
     table = SCORING[gender][age_group]
 
+    # ✅ BMI
     bmi = compute_bmi(data.weight, data.height)
-    bmi_status = get_component_status("bmi", bmi, table["bmi"])
+    bmi_status = compute_bmi_status(bmi, table["bmi"])
 
+    # ✅ Weight
     ideal_weight = compute_ideal_weight(data.height, gender)
     weight_diff = data.weight - ideal_weight
-
     weight_status = (
         "Normal" if -3 <= weight_diff <= 3 else
         "Overweight" if weight_diff > 3 else
         "Underweight"
     )
 
-    cardio_min = time_to_minutes(data.cardio_minutes, data.cardio_seconds)
-    cardio_status = get_component_status("cardio", cardio_min, table["cardio"], is_time=True)
-
-    step_status  = get_component_status("step_up", data.step_up, table["step_up_3min"])
-    push_status  = get_component_status("push_up", data.push_up, table["push_up_1min"])
-    sit_status   = get_component_status("sit_up", data.sit_up, table["sit_up_1min"])
-    chin_status  = get_component_status("chin_up", data.chin_up, table["chin_up_1min"])
-    reach_status = get_component_status("sit_reach", data.sit_reach, table["sit_reach_cm"])
-
-    aggregate = sum([
-        cardio_status["points"],
-        step_status["points"],
-        push_status["points"],
-        sit_status["points"],
-        chin_status["points"],
-        reach_status["points"],
-        bmi_status["points"]
-    ])
-
-    if aggregate >= 90:
-        grade = "Excellent"
-        prescription = ("Maintain your physical routine", "Maintain your routine")
-        activity = "Maintain your fitness"
-    elif aggregate >= 75:
-        grade = "Good"
-        prescription = ("1–35 minutes", "3–4 days/week")
-        activity = "Moderate aerobic activities"
-    elif aggregate >= 70:
-        grade = "Marginal"
-        prescription = ("36–45 minutes", "3–4 days/week")
-        activity = "Strenuous intermittent activities"
-    else:
-        grade = "Poor"
-        prescription = ("46+ minutes", "5–6 days/week")
-        activity = "Strenuous aerobic activities"
+    # Points aggregation (BMI only shown here for clarity)
+    aggregate = bmi_status["points"]
 
     return {
-        "bmi_current": round(bmi, 1),
+        "bmi_current": bmi_status["current"],
         "bmi_ideal": bmi_status["ideal"],
-        "bmi_excess": bmi_status.get("excess", 0),
-        "bmi_deficit": bmi_status.get("deficit", 0),
+        "bmi_excess": bmi_status["excess"],
+        "bmi_deficit": bmi_status["deficit"],
         "bmi_status": bmi_status["status"],
+        "bmi_points": bmi_status["points"],
 
         "weight_current": round(data.weight, 1),
         "weight_ideal": round(ideal_weight, 1),
@@ -397,9 +330,5 @@ def compute_naf_pft(data) -> Dict:
         "weight_deficit": round(max(0, -weight_diff), 1),
         "weight_status": weight_status,
 
-        "aggregate": aggregate,
-        "grade": grade,
-        "prescription_duration": prescription[0],
-        "prescription_days": prescription[1],
-        "recommended_activity": activity
+        "aggregate": aggregate
     }
