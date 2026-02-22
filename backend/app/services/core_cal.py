@@ -250,21 +250,251 @@
 #     }
 
 
+# from typing import Dict
+# from .scoring_tables import SCORING
+
+
+# # =========================================================
+# # Utility functions
+# # =========================================================
+
+# def get_points(value: float, ranges: list) -> int:
+#     if not ranges:
+#         return 0
+#     for low, high, pts in ranges:
+#         if low <= value <= high:
+#             return pts
+#     return 0
+
+
+# def determine_age_group(age: int) -> str:
+#     if age <= 29:
+#         return "<29"
+#     elif 30 <= age <= 39:
+#         return "30-39"
+#     elif 40 <= age <= 49:
+#         return "40-49"
+#     elif 50 <= age <= 59:
+#         return "50-59"
+#     elif age >= 60:
+#         return "60+"
+#     raise ValueError(f"Unsupported age: {age}")
+
+
+# def compute_bmi(weight_kg: float, height_m: float) -> float:
+#     if height_m <= 0:
+#         return 0.0
+#     return round(weight_kg / (height_m ** 2), 2)
+
+
+# def compute_ideal_weight(height_m: float, gender: str) -> float:
+#     height_cm = height_m * 100
+#     if gender == "male":
+#         return round(50 + 0.91 * (height_cm - 152.4), 1)
+#     return round(45.5 + 0.91 * (height_cm - 152.4), 1)
+
+
+# # =========================================================
+# # Component status engine (FIXED)
+# # =========================================================
+
+# def get_component_status(component: str, value: float, cfg: dict) -> dict:
+#     points = get_points(value, cfg["ranges"])
+
+#     result = {
+#         "value": round(value, 2),
+#         "points": points,
+#         "status": (
+#             "Excellent" if points >= 20 else
+#             "Good" if points >= 10 else
+#             "Fair" if points >= 5 else
+#             "Needs Improvement"
+#         )
+#     }
+
+#     # ---------------- BMI (Closer to ideal RANGE) ----------------
+#     if cfg["type"] == "Closer to ideal":
+#         low, high = cfg["ideal"]
+#         result["ideal"] = f"{low}–{high}"
+
+#         if value > high:
+#             result["excess"] = round(value - high, 2)
+#             result["deficit"] = 0
+#         elif value < low:
+#             result["deficit"] = round(low - value, 2)
+#             result["excess"] = 0
+#         else:
+#             result["excess"] = 0
+#             result["deficit"] = 0
+
+#     # ---------------- Higher is better ----------------
+#     elif cfg["type"] == "Higher is better":
+#         result["ideal"] = cfg["ideal"]
+#         result["shortfall"] = max(0, cfg["ideal"] - value)
+
+#         if component == "sit_up_1min":
+#             result["excess"] = max(0, value - cfg["ideal"])
+
+#     # ---------------- Cardio (Cage-based) ----------------
+#     elif cfg["type"] == "Cage-based":
+#         result["ideal"] = cfg["ideal"]
+#         result["excess"] = max(0, value - cfg["ideal"])
+
+#     return result
+
+
+# # =========================================================
+# # Main computation function
+# # =========================================================
+
+# def compute_naf_pft(data) -> Dict:
+#     gender = data.sex.lower()
+#     if gender not in ("male", "female"):
+#         return {"error": "Gender must be male or female"}
+
+#     try:
+#         age_group = determine_age_group(data.age)
+#     except ValueError as e:
+#         return {"error": str(e)}
+
+#     if age_group not in SCORING[gender]:
+#         return {"error": f"No scoring table for {gender} {age_group}"}
+
+#     table = SCORING[gender][age_group]
+
+#     # ---------------- BMI ----------------
+#     bmi_value = compute_bmi(data.weight, data.height)
+#     bmi_status = get_component_status("bmi", bmi_value, table["bmi"])
+
+#     # ---------------- Weight ----------------
+#     ideal_weight = compute_ideal_weight(data.height, gender)
+#     weight_diff = round(data.weight - ideal_weight, 1)
+
+#     weight_status = (
+#         "Normal" if -3 <= weight_diff <= 3 else
+#         "Overweight" if weight_diff > 3 else
+#         "Underweight"
+#     )
+
+#     # ---------------- Cardio (CAGE) ----------------
+#     cardio_cfg = table["cardio"]
+#     cardio_status = get_component_status(
+#         "cardio",
+#         data.cardio_cage,
+#         cardio_cfg
+#     )
+
+#     # ---------------- Other components ----------------
+#     step_cfg  = table["step_up_3min"]
+#     push_cfg  = table["push_up_1min"]
+#     sit_cfg   = table["sit_up_1min"]
+#     chin_cfg  = table["chin_up_1min"]
+#     reach_cfg = table["sit_reach_cm"]
+
+#     step_status  = get_component_status("step_up", data.step_up, step_cfg)
+#     push_status  = get_component_status("push_up", data.push_up, push_cfg)
+#     sit_status   = get_component_status("sit_up", data.sit_up, sit_cfg)
+#     chin_status  = get_component_status("chin_up", data.chin_up, chin_cfg)
+#     reach_status = get_component_status("sit_reach", data.sit_reach, reach_cfg)
+
+#     # ---------------- Aggregate ----------------
+#     aggregate = (
+#         cardio_status["points"]
+#         + step_status["points"]
+#         + push_status["points"]
+#         + sit_status["points"]
+#         + chin_status["points"]
+#         + reach_status["points"]
+#         + bmi_status["points"]
+#     )
+
+#     # ---------------- Grade ----------------
+#     if aggregate >= 90:
+#         grade = "Excellent"
+#         prescription = ("Maintain routine", "Maintain routine")
+#         activity = "Maintain fitness"
+#     elif aggregate >= 75:
+#         grade = "Good"
+#         prescription = ("1–35 minutes", "3–4 days/week")
+#         activity = "Moderate aerobic activities"
+#     elif aggregate >= 70:
+#         grade = "Marginal"
+#         prescription = ("36–45 minutes", "3–4 days/week")
+#         activity = "Strenuous intermittent activities"
+#     else:
+#         grade = "Poor"
+#         prescription = ("46+ minutes", "5–6 days/week")
+#         activity = "High-intensity aerobic activities"
+
+#     # ---------------- Final output ----------------
+#     return {
+#         "full_name": data.full_name,
+#         "rank": data.rank,
+#         "svc_no": data.svc_no,
+#         "unit": data.unit,
+#         "year": data.year,
+#         "appointment": data.appointment,
+#         "age": data.age,
+#         "date": data.date,
+#         "sex": data.sex.upper(),
+#         "height": data.height,
+#         "email": data.email,
+
+#         "weight_current": round(data.weight, 1),
+#         "weight_ideal": ideal_weight,
+#         "weight_excess": max(0, weight_diff),
+#         "weight_deficit": max(0, -weight_diff),
+#         "weight_status": weight_status,
+
+#         "bmi_current": bmi_value,
+#         "bmi_ideal": table["bmi"]["ideal"],
+#         "bmi_excess": bmi_status.get("excess", 0),
+#         "bmi_deficit": bmi_status.get("deficit", 0),
+#         "bmi_status": bmi_status["status"],
+
+#         "cardio_value": cardio_status["value"],
+#         "cardio_ideal": cardio_status["ideal"],
+#         "cardio_status": cardio_status["status"],
+
+#         "step_up_value": data.step_up,
+#         "step_up_status": step_status["status"],
+
+#         "push_up_value": data.push_up,
+#         "push_up_status": push_status["status"],
+
+#         "sit_up_value": data.sit_up,
+#         "sit_up_status": sit_status["status"],
+
+#         "chin_up_value": data.chin_up,
+#         "chin_up_status": chin_status["status"],
+
+#         "sit_reach_value": data.sit_reach,
+#         "sit_reach_status": reach_status["status"],
+
+#         "aggregate": aggregate,
+#         "grade": grade,
+#         "prescription_duration": prescription[0],
+#         "prescription_days": prescription[1],
+#         "recommended_activity": activity,
+
+#         "evaluator_name": data.evaluator_name,
+#         "evaluator_rank": data.evaluator_rank,
+#     }
+
+
 from typing import Dict
 from .scoring_tables import SCORING
 
 
-# =========================================================
-# Utility functions
-# =========================================================
-
 def get_points(value: float, ranges: list) -> int:
     if not ranges:
         return 0
+    ranges = sorted(ranges, key=lambda x: x[0])
     for low, high, pts in ranges:
         if low <= value <= high:
             return pts
-    return 0
+    # If value is above the highest range, return the lowest points (conservative)
+    return ranges[-1][2] if value > ranges[-1][1] else 0
 
 
 def determine_age_group(age: int) -> str:
@@ -294,10 +524,6 @@ def compute_ideal_weight(height_m: float, gender: str) -> float:
     return round(45.5 + 0.91 * (height_cm - 152.4), 1)
 
 
-# =========================================================
-# Component status engine (FIXED)
-# =========================================================
-
 def get_component_status(component: str, value: float, cfg: dict) -> dict:
     points = get_points(value, cfg["ranges"])
 
@@ -312,40 +538,27 @@ def get_component_status(component: str, value: float, cfg: dict) -> dict:
         )
     }
 
-    # ---------------- BMI (Closer to ideal RANGE) ----------------
+    # BMI – range-based
     if cfg["type"] == "Closer to ideal":
         low, high = cfg["ideal"]
-        result["ideal"] = f"{low}–{high}"
+        result["ideal_range"] = f"{low}–{high}"
+        result["excess"] = round(max(0, value - high), 2)
+        result["deficit"] = round(max(0, low - value), 2)
 
-        if value > high:
-            result["excess"] = round(value - high, 2)
-            result["deficit"] = 0
-        elif value < low:
-            result["deficit"] = round(low - value, 2)
-            result["excess"] = 0
-        else:
-            result["excess"] = 0
-            result["deficit"] = 0
-
-    # ---------------- Higher is better ----------------
+    # Reps-based (higher better)
     elif cfg["type"] == "Higher is better":
         result["ideal"] = cfg["ideal"]
-        result["shortfall"] = max(0, cfg["ideal"] - value)
+        result["shortfall"] = round(max(0, cfg["ideal"] - value), 1)
+        if component in ["sit_up_1min", "step_up_3min"]:
+            result["excess"] = round(max(0, value - cfg["ideal"]), 1)
 
-        if component == "sit_up_1min":
-            result["excess"] = max(0, value - cfg["ideal"])
-
-    # ---------------- Cardio (Cage-based) ----------------
+    # Cardio cage (special case)
     elif cfg["type"] == "Cage-based":
-        result["ideal"] = cfg["ideal"]
-        result["excess"] = max(0, value - cfg["ideal"])
+        result["ideal"] = cfg["ideal"]                     # ← FIXED: this line was missing
+        result["excess"] = round(max(0, value - cfg["ideal"]), 0)
 
     return result
 
-
-# =========================================================
-# Main computation function
-# =========================================================
 
 def compute_naf_pft(data) -> Dict:
     gender = data.sex.lower()
@@ -357,76 +570,74 @@ def compute_naf_pft(data) -> Dict:
     except ValueError as e:
         return {"error": str(e)}
 
-    if age_group not in SCORING[gender]:
+    table = SCORING[gender].get(age_group)
+    if not table:
         return {"error": f"No scoring table for {gender} {age_group}"}
 
-    table = SCORING[gender][age_group]
-
-    # ---------------- BMI ----------------
+    # ───────────────────── BMI ─────────────────────
     bmi_value = compute_bmi(data.weight, data.height)
     bmi_status = get_component_status("bmi", bmi_value, table["bmi"])
 
-    # ---------------- Weight ----------------
+    # ───────────────────── Ideal weight ─────────────────────
     ideal_weight = compute_ideal_weight(data.height, gender)
-    weight_diff = round(data.weight - ideal_weight, 1)
-
+    weight_diff = data.weight - ideal_weight
     weight_status = (
         "Normal" if -3 <= weight_diff <= 3 else
         "Overweight" if weight_diff > 3 else
         "Underweight"
     )
 
-    # ---------------- Cardio (CAGE) ----------------
+    # ───────────────────── Cardio (Cage) ─────────────────────
     cardio_cfg = table["cardio"]
-    cardio_status = get_component_status(
-        "cardio",
-        data.cardio_cage,
-        cardio_cfg
-    )
+    cardio_status = get_component_status("cardio", data.cardio_cage, cardio_cfg)
 
-    # ---------------- Other components ----------------
-    step_cfg  = table["step_up_3min"]
-    push_cfg  = table["push_up_1min"]
-    sit_cfg   = table["sit_up_1min"]
-    chin_cfg  = table["chin_up_1min"]
-    reach_cfg = table["sit_reach_cm"]
+    # ───────────────────── Other components ─────────────────────
+    step_cfg   = table["step_up_3min"]
+    push_cfg   = table["push_up_1min"]
+    sit_cfg    = table["sit_up_1min"]
+    chin_cfg   = table["chin_up_1min"]
+    reach_cfg  = table["sit_reach_cm"]
 
-    step_status  = get_component_status("step_up", data.step_up, step_cfg)
-    push_status  = get_component_status("push_up", data.push_up, push_cfg)
-    sit_status   = get_component_status("sit_up", data.sit_up, sit_cfg)
-    chin_status  = get_component_status("chin_up", data.chin_up, chin_cfg)
-    reach_status = get_component_status("sit_reach", data.sit_reach, reach_cfg)
+    step_status  = get_component_status("step_up_3min",   data.step_up,   step_cfg)
+    push_status  = get_component_status("push_up_1min",   data.push_up,   push_cfg)
+    sit_status   = get_component_status("sit_up_1min",    data.sit_up,    sit_cfg)
+    chin_status  = get_component_status("chin_up_1min",   data.chin_up,   chin_cfg)
+    reach_status = get_component_status("sit_reach_cm",   data.sit_reach, reach_cfg)
 
-    # ---------------- Aggregate ----------------
+    # ───────────────────── Aggregate score ─────────────────────
     aggregate = (
-        cardio_status["points"]
-        + step_status["points"]
-        + push_status["points"]
-        + sit_status["points"]
-        + chin_status["points"]
-        + reach_status["points"]
-        + bmi_status["points"]
+        cardio_status["points"] +
+        step_status["points"] +
+        push_status["points"] +
+        sit_status["points"] +
+        chin_status["points"] +
+        reach_status["points"] +
+        bmi_status["points"]
     )
 
-    # ---------------- Grade ----------------
+    # ───────────────────── Grade & Prescription ─────────────────────
     if aggregate >= 90:
         grade = "Excellent"
-        prescription = ("Maintain routine", "Maintain routine")
-        activity = "Maintain fitness"
+        prescription_duration = "Maintain current routine"
+        prescription_days = "Maintain current routine"
+        recommended_activity = "Continue present fitness level"
     elif aggregate >= 75:
         grade = "Good"
-        prescription = ("1–35 minutes", "3–4 days/week")
-        activity = "Moderate aerobic activities"
-    elif aggregate >= 70:
-        grade = "Marginal"
-        prescription = ("36–45 minutes", "3–4 days/week")
-        activity = "Strenuous intermittent activities"
+        prescription_duration = "30–45 minutes"
+        prescription_days = "4–5 days/week"
+        recommended_activity = "Moderate aerobic + strength training"
+    elif aggregate >= 65:
+        grade = "Fair"
+        prescription_duration = "45–60 minutes"
+        prescription_days = "4–5 days/week"
+        recommended_activity = "Aerobic + muscular endurance focus"
     else:
-        grade = "Poor"
-        prescription = ("46+ minutes", "5–6 days/week")
-        activity = "High-intensity aerobic activities"
+        grade = "Needs Improvement"
+        prescription_duration = "60+ minutes"
+        prescription_days = "5–6 days/week"
+        recommended_activity = "Intensive aerobic & strength program"
 
-    # ---------------- Final output ----------------
+    # ───────────────────── Final result dictionary ─────────────────────
     return {
         "full_name": data.full_name,
         "rank": data.rank,
@@ -442,40 +653,51 @@ def compute_naf_pft(data) -> Dict:
 
         "weight_current": round(data.weight, 1),
         "weight_ideal": ideal_weight,
-        "weight_excess": max(0, weight_diff),
-        "weight_deficit": max(0, -weight_diff),
+        "weight_excess": round(max(0, weight_diff), 1),
+        "weight_deficit": round(max(0, -weight_diff), 1),
         "weight_status": weight_status,
 
         "bmi_current": bmi_value,
-        "bmi_ideal": table["bmi"]["ideal"],
-        "bmi_excess": bmi_status.get("excess", 0),
-        "bmi_deficit": bmi_status.get("deficit", 0),
+        "bmi_ideal_range": bmi_status.get("ideal_range", "18.0–24.9"),
         "bmi_status": bmi_status["status"],
 
-        "cardio_value": cardio_status["value"],
-        "cardio_ideal": cardio_status["ideal"],
+        "cardio_value": data.cardio_cage,
+        "cardio_ideal": cardio_status.get("ideal", cardio_cfg["ideal"]),  # safe access
         "cardio_status": cardio_status["status"],
+        "cardio_points": cardio_status["points"],
 
         "step_up_value": data.step_up,
+        "step_up_ideal": step_cfg["ideal"],
         "step_up_status": step_status["status"],
+        "step_up_points": step_status["points"],
 
         "push_up_value": data.push_up,
+        "push_up_ideal": push_cfg["ideal"],
         "push_up_status": push_status["status"],
+        "push_up_points": push_status["points"],
 
         "sit_up_value": data.sit_up,
+        "sit_up_ideal": sit_cfg["ideal"],
         "sit_up_status": sit_status["status"],
+        "sit_up_points": sit_status["points"],
 
         "chin_up_value": data.chin_up,
+        "chin_up_ideal": chin_cfg["ideal"],
         "chin_up_status": chin_status["status"],
+        "chin_up_points": chin_status["points"],
 
         "sit_reach_value": data.sit_reach,
+        "sit_reach_ideal": reach_cfg["ideal"],
         "sit_reach_status": reach_status["status"],
+        "sit_reach_points": reach_status["points"],
 
-        "aggregate": aggregate,
+        "bmi_points": bmi_status["points"],
+
+        "aggregate": round(aggregate),
         "grade": grade,
-        "prescription_duration": prescription[0],
-        "prescription_days": prescription[1],
-        "recommended_activity": activity,
+        "prescription_duration": prescription_duration,
+        "prescription_days": prescription_days,
+        "recommended_activity": recommended_activity,
 
         "evaluator_name": data.evaluator_name,
         "evaluator_rank": data.evaluator_rank,
