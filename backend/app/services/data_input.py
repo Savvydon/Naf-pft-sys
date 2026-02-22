@@ -55,22 +55,13 @@ def get_user_input():
 
     while True:
         try:
-            mins = int(input("Cardio time - Minutes: ").strip())
-            if mins >= 0: break
+            cage = int(input("Cardio Cage (1, 2, or 3): ").strip())
+            if cage in [1, 2, 3]:
+                d.cardio_cage = cage
+                break
         except:
             pass
-        print("Enter valid minutes.")
-
-    while True:
-        try:
-            secs = int(input("Cardio time - Seconds (0-59): ").strip())
-            if 0 <= secs <= 59: break
-        except:
-            pass
-        print("Seconds 0-59.")
-
-    d.cardio_minutes = mins
-    d.cardio_seconds = secs
+        print("Enter 1, 2, or 3.")
 
     d.step_up   = int(input("3-Minute Step-Up (reps):   ").strip() or 0)
     d.push_up   = int(input("1-Minute Push-Up (reps):   ").strip() or 0)
