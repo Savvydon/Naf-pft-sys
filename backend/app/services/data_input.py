@@ -5,7 +5,7 @@ def get_user_input():
         pass
 
     d = Data()
-    d.year         = input("Year").strip()
+    d.year         = input("Year: ").strip()
     d.full_name    = input("Full Name: ").strip()
     d.rank         = input("Rank: ").strip()
     d.svc_no       = input("Service Number: ").strip()
@@ -50,7 +50,7 @@ def get_user_input():
         except:
             print("Enter valid weight.")
 
-    cardio_type_hint = "jog" if (d.age < 29) else "walk"
+    cardio_type_hint = "jog" if d.age <= 29 else "walk"
     print(f"\nCardio test for your age group: {cardio_type_hint.upper()}")
 
     while True:
@@ -68,5 +68,7 @@ def get_user_input():
     d.sit_up    = int(input("1-Minute Sit-Up (reps):    ").strip() or 0)
     d.chin_up   = int(input("Chin-Up / Arm Hang (reps): ").strip() or 0)
     d.sit_reach = int(input("Sit & Reach (cm):          ").strip() or 0)
+    d.evaluator_name    = input("Evaluator Name: ").strip()
+    d.evaluator_rank         = input("Evaluator Rank: ").strip()
 
     return d

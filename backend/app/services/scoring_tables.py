@@ -10,13 +10,13 @@ SCORING: Dict = {
                     (3, 3, 5),   # Cage 3
                 ],
                 "ideal": 1,
-                "type": "2.4 km Jog"
+                "type": "Cage-based"
             },
             "step_up_3min": {
                 "ranges": [(0.0, 82.999, 10), (83.0, 96.0, 9), (96.1, 107.0, 8),
                            (107.1, 117.0, 7), (117.1, 130.0, 6), (130.1, float('inf'), 1)],
                 "ideal": 105,
-                "optimum": 140,
+                "optimum": 115,
                 "type": "Higher is better"
             },
             "push_up_1min": {
@@ -58,13 +58,14 @@ SCORING: Dict = {
                     (3, 3, 5),   # Cage 3
                 ],
                 "ideal": 1,
-                "type": "2.4 km Jog"
+                #"type": "2.4 km Jog"
+                "type": "Cage-based"
             },
             "step_up_3min": {  # same as <29
                 "ranges": [(0.0, 82.999, 10), (83.0, 96.0, 9), (96.1, 107.0, 8),
                            (107.1, 117.0, 7), (117.1, 130.0, 6), (130.1, float('inf'), 1)],
-                "ideal": 130,
-                "optimum": 140,
+                "ideal": 115,
+                "optimum": 125,
                 "type": "Higher is better"
             },
             "push_up_1min": {  # same as <29
@@ -106,7 +107,8 @@ SCORING: Dict = {
                     (3, 3, 5),   # Cage 3
                 ],
                 "ideal": 1,
-                "type": "5 km Walk"
+                #"type": "5 km Walk"
+                "type": "Cage-based"
             },
             "step_up_3min": {  # same
                 "ranges": [(0.0, 82.999, 10), (83.0, 96.0, 9), (96.1, 107.0, 8),
@@ -154,13 +156,14 @@ SCORING: Dict = {
                     (3, 3, 5),   # Cage 3
                 ],
                 "ideal": 1,
-                "type": "5 km Walk"
+                #"type": "5 km Walk"
+                "type": "Cage-based"
             },
             "step_up_3min": {  # same
                 "ranges": [(0.0, 82.999, 10), (83.0, 96.0, 9), (97.0, 107.0, 8),
                            (108.0, 117.0, 7), (118.0, 130.0, 6), (130.001, float('inf'), 1)],
-                "ideal": 130,
-                "optimum": 140,
+                "ideal": 135,
+                "optimum": 145,
                 "type": "Higher is better"
             },
             "push_up_1min": {
@@ -202,12 +205,13 @@ SCORING: Dict = {
                     (3, 3, 5),   # Cage 3
                 ],
                 "ideal": 1,
-                "type": "5 km Walk"
+                "type": "Cage-based"
+                #"type": "5 km Walk"
             },
             "step_up_3min": {  # same
                 "ranges": [(0.0, 82.999, 10), (83.0, 96.0, 9), (97.0, 107.0, 8),
                            (108.0, 117.0, 7), (118.0, 130.0, 6), (130.001, float('inf'), 1)],
-                "ideal": 130,
+                "ideal": 140,
                 "optimum": 140,
                 "type": "Higher is better"
             },
@@ -252,13 +256,14 @@ SCORING: Dict = {
                     (3, 3, 5),   # Cage 3
                 ],
                 "ideal": 1,
-                "type": "2.4 km Jog"
+                "type": "Cage-based"
+                #"type": "2.4 km Jog"
             },
             "step_up_3min": {
-                "ranges": [(0.0, 89.999, 10), (90.0, 110.0, 9), (111.0, 118.0, 8),
+                "ranges": [(0.0, 90.0, 10), (90.1, 110.0, 9), (111.0, 118.0, 8),
                            (119.0, 128.0, 7), (129.0, 140.0, 6), (140.001, float('inf'), 1)],
-                "ideal": 140,
-                "optimum": 150,
+                "ideal": 120,
+                "optimum": 130,
                 "type": "Higher is better"
             },
             "push_up_1min": {  # same as male <29
@@ -300,13 +305,14 @@ SCORING: Dict = {
                     (3, 3, 5),   # Cage 3
                 ],
                 "ideal": 1,
-                "type": "2.4 km Jog"
+                "type": "Cage-based"
+                #"type": "2.4 km Jog"
             },
             "step_up_3min": {  # same as <29 female
                 "ranges": [(0.0, 89.999, 10), (90.0, 110.0, 9), (111.0, 118.0, 8),
                            (119.0, 128.0, 7), (129.0, 140.0, 6), (140.001, float('inf'), 1)],
-                "ideal": 140,
-                "optimum": 150,
+                "ideal": 120,
+                "optimum": 130,
                 "type": "Higher is better"
             },
             "push_up_1min": {
@@ -348,12 +354,13 @@ SCORING: Dict = {
                     (3, 3, 5),   # Cage 3
                 ],
                 "ideal": 1,
-                "type": "5 km Walk"
+                "type": "Cage-based"
+                #"type": "5 km Walk"
             },
             "step_up_3min": {  # same
                 "ranges": [(0.0, 89.999, 10), (90.0, 110.0, 9), (111.0, 118.0, 8),
                            (119.0, 128.0, 7), (129.0, 140.0, 6), (140.001, float('inf'), 1)],
-                "ideal": 140,
+                "ideal": 130,
                 "optimum": 150,
                 "type": "Higher is better"
             },
@@ -396,7 +403,8 @@ SCORING: Dict = {
                     (3, 3, 5),   # Cage 3
                 ],
                 "ideal": 1,
-                "type": "5 km Walk"
+                "type": "Cage-based"
+                #"type": "5 km Walk"
             },
             "step_up_3min": {  # same
                 "ranges": [(0.0, 89.999, 10), (90.0, 110.0, 9), (111.0, 118.0, 8),
@@ -444,7 +452,8 @@ SCORING: Dict = {
                     (3, 3, 5),   # Cage 3
                 ],
                 "ideal": 1,
-                "type": "5 km Walk"
+                "type": "Cage-based"
+                #"type": "5 km Walk"
             },
             "step_up_3min": {  # same
                 "ranges": [(0.0, 89.999, 10), (90.0, 110.0, 9), (111.0, 118.0, 8),

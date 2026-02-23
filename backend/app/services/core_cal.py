@@ -1,89 +1,107 @@
-
 from typing import Dict
 from .scoring_tables import SCORING
-
 
 # =========================================================
 # Utility functions
 # =========================================================
 
 def get_points(value: float, ranges: list) -> int:
-    if not ranges:
-        return 0
-    ranges = sorted(ranges, key=lambda x: x[0])
     for low, high, pts in ranges:
         if low <= value <= high:
             return pts
-    return ranges[-1][2] if value > ranges[-1][1] else 0
-
+    return 0
 
 def determine_age_group(age: int) -> str:
     if age <= 29:
         return "<29"
-    elif 30 <= age <= 39:
+    elif age <= 39:
         return "30-39"
-    elif 40 <= age <= 49:
+    elif age <= 49:
         return "40-49"
-    elif 50 <= age <= 59:
+    elif age <= 59:
         return "50-59"
-    elif age >= 60:
+    else:
         return "60+"
-    raise ValueError(f"Unsupported age: {age}")
-
 
 def compute_bmi(weight_kg: float, height_m: float) -> float:
-    if height_m <= 0:
-        return 0.0
-    return round(weight_kg / (height_m ** 2), 2)
-
+    return round(weight_kg / (height_m ** 2), 2) if height_m > 0 else 0.0
 
 def compute_ideal_weight(height_m: float, gender: str) -> float:
     height_cm = height_m * 100
-    if gender == "male":
-        return round(50 + 0.91 * (height_cm - 152.4), 1)
-    return round(45.5 + 0.91 * (height_cm - 152.4), 1)
-
+    base = 50 if gender == "male" else 45.5
+    return round(base + 0.91 * (height_cm - 152.4), 1)
 
 # =========================================================
-# Component scoring engine (FIXED & SAFE)
+# Status evaluation engine (FIXED)
 # =========================================================
 
-def get_component_status(component: str, value: float, cfg: dict) -> dict:
+def evaluate_status(value, ideal, deficit, excess, cfg_type):
+    # ---- BMI ----
+    if cfg_type == "Closer to ideal":
+        low, high = ideal
+        if low <= value <= high:
+            return "Normal"
+        elif value < low:
+            return "Underweight"
+        else:
+            return "Overweight"
+
+    # ---- Performance tests ----
+    if deficit == 0 and excess == 0:
+        return "Excellent"
+    if deficit == 0 and excess > 0:
+        return "Above Standard"
+
+    deficit_ratio = deficit / ideal if ideal else 1
+
+    if deficit_ratio <= 0.20:
+        return "Good"
+    elif deficit_ratio <= 0.40:
+        return "Fair"
+    else:
+        return "Poor"
+
+# =========================================================
+# Component scoring engine (ACCURATE)
+# =========================================================
+
+def get_component_status(value: float, cfg: dict) -> Dict:
     points = get_points(value, cfg["ranges"])
 
     result = {
         "value": round(value, 2),
         "points": points,
-        "status": (
-            "Excellent" if points >= 20 else
-            "Good" if points >= 10 else
-            "Fair" if points >= 5 else
-            "Needs Improvement"
-        )
+        "ideal": None,
+        "deficit": 0.0,
+        "excess": 0.0,
+        "status": None,
     }
 
-    # ---- BMI (range-based) ----
+    # ---- BMI ----
     if cfg["type"] == "Closer to ideal":
         low, high = cfg["ideal"]
-        result["ideal_range"] = f"{low}–{high}"
-        result["excess"] = round(max(0, value - high), 2)
+        result["ideal"] = (low, high)
         result["deficit"] = round(max(0, low - value), 2)
+        result["excess"] = round(max(0, value - high), 2)
+        result["status"] = evaluate_status(
+            value, (low, high),
+            result["deficit"], result["excess"],
+            cfg["type"]
+        )
 
     # ---- Repetition-based ----
-    elif cfg["type"] == "Higher is better":
+    elif cfg["type"] in ("Higher is better", "Cage-based"):
         ideal = cfg["ideal"]
         result["ideal"] = ideal
-        result["shortfall"] = round(max(0, ideal - value), 1)
+        result["deficit"] = round(max(0, ideal - value), 1)
         result["excess"] = round(max(0, value - ideal), 1)
-
-    # ---- Cardio (Cage-based) ----
-    elif cfg["type"] == "Cage-based":
-        ideal = cfg["ideal"]
-        result["ideal"] = ideal
-        result["excess"] = round(max(0, value - ideal), 1)
+        result["status"] = evaluate_status(
+            value, ideal,
+            result["deficit"], result["excess"],
+            cfg["type"]
+        )
 
     return result
-
 
 # =========================================================
 # Main computation
@@ -91,68 +109,48 @@ def get_component_status(component: str, value: float, cfg: dict) -> dict:
 
 def compute_naf_pft(data) -> Dict:
     gender = data.sex.lower()
-    if gender not in ("male", "female"):
-        return {"error": "Gender must be male or female"}
-
     age_group = determine_age_group(data.age)
-    table = SCORING.get(gender, {}).get(age_group)
 
+    table = SCORING.get(gender, {}).get(age_group)
     if not table:
         return {"error": f"No scoring table for {gender} {age_group}"}
 
-    # ---- BMI ----
-    bmi_value = compute_bmi(data.weight, data.height)
-    bmi_status = get_component_status("bmi", bmi_value, table["bmi"])
-
-    # ---- Weight ----
-    ideal_weight = compute_ideal_weight(data.height, gender)
-    weight_diff = round(data.weight - ideal_weight, 1)
-    weight_status = (
-        "Normal" if -3 <= weight_diff <= 3 else
-        "Overweight" if weight_diff > 3 else
-        "Underweight"
-    )
-
-    # ---- Cardio ----
-    cardio_cfg = table["cardio"]
-    cardio_status = get_component_status("cardio", data.cardio_cage, cardio_cfg)
-
-    # ---- Other components ----
-    step_status  = get_component_status("step_up", data.step_up, table["step_up_3min"])
-    push_status  = get_component_status("push_up", data.push_up, table["push_up_1min"])
-    sit_status   = get_component_status("sit_up", data.sit_up, table["sit_up_1min"])
-    chin_status  = get_component_status("chin_up", data.chin_up, table["chin_up_1min"])
-    reach_status = get_component_status("sit_reach", data.sit_reach, table["sit_reach_cm"])
+    bmi = get_component_status(compute_bmi(data.weight, data.height), table["bmi"])
+    cardio = get_component_status(data.cardio_cage, table["cardio"])
+    step = get_component_status(data.step_up, table["step_up_3min"])
+    push = get_component_status(data.push_up, table["push_up_1min"])
+    sit = get_component_status(data.sit_up, table["sit_up_1min"])
+    chin = get_component_status(data.chin_up, table["chin_up_1min"])
+    reach = get_component_status(data.sit_reach, table["sit_reach_cm"])
 
     aggregate = sum([
-        bmi_status["points"],
-        cardio_status["points"],
-        step_status["points"],
-        push_status["points"],
-        sit_status["points"],
-        chin_status["points"],
-        reach_status["points"],
+        bmi["points"], cardio["points"], step["points"],
+        push["points"], sit["points"], chin["points"], reach["points"]
     ])
 
     # ---- Grade ----
     if aggregate >= 90:
         grade = "Excellent"
-        prescription = "Maintain your physical routine", "Maintain your routine"
-        recommended_activity = "Maintain your fitness"
+        duration, days = "Maintain routine", "Maintain routine"
+        activity = "Maintain your fitness"
     elif aggregate >= 75:
         grade = "Good"
-        prescription = "1-35 minute(s)", "3-4 day per week"
-        recommended_activity = "Aerobic activities of moderate intensity: Tennis single, low aerobic dance and  fast walking."
+        duration, days = "1–35 minutes", "3–4 days per week"
+        activity = "Moderate aerobic activities"
     elif aggregate >= 70:
         grade = "Marginal"
-        prescription = "36-45 minutes", "3-4 day per week"
-        recommended_activity = "Strenuous activities that involves stopping and starting: Basketball, soccer, circuit training and hill climbing."
+        duration, days = "36–45 minutes", "3–4 days per week"
+        activity = "Structured conditioning exercises"
     else:
         grade = "Poor"
-        prescription = "46 minutes and above", "5-6 day per week"
-        recommended_activity = "Strenuous aerobic activity resulting in heavy breathing: Jogging, running, swimming, rope Skipping and  brisk walking."
+        duration, days = "46 minutes and above", "5–6 days per week"
+        activity = "High-intensity aerobic activities"
+
+    ideal_weight = compute_ideal_weight(data.height, gender)
+    weight_diff = round(data.weight - ideal_weight, 1)
 
     return {
+
         "full_name": data.full_name,
         "rank": data.rank,
         "svc_no": data.svc_no,
@@ -165,24 +163,74 @@ def compute_naf_pft(data) -> Dict:
         "height": data.height,
         "email": data.email,
 
+        # Weight
         "weight_current": round(data.weight, 1),
         "weight_ideal": ideal_weight,
         "weight_excess": max(0, weight_diff),
         "weight_deficit": max(0, -weight_diff),
-        "weight_status": weight_status,
+        "weight_status": (
+            "Normal" if -3 <= weight_diff <= 3 else
+            "Overweight" if weight_diff > 3 else
+            "Underweight"
+        ),
 
-        "bmi_current": bmi_value,
-        "bmi_ideal_range": bmi_status["ideal_range"],
-        "bmi_excess": bmi_status["excess"],
-        "bmi_deficit": bmi_status["deficit"],
-        "bmi_status": bmi_status["status"],
-        "bmi_points": bmi_status["points"],
+        # BMI
+        "bmi_current": bmi["value"],
+        "bmi_ideal": f"{bmi['ideal'][0]}–{bmi['ideal'][1]}",
+        "bmi_excess": bmi["excess"],
+        "bmi_deficit": bmi["deficit"],
+        "bmi_status": bmi["status"],
+        "bmi_points": bmi["points"],
 
-        "cardio_value": data.cardio_cage,
-        "cardio_ideal": cardio_status["ideal"],
-        "cardio_status": cardio_status["status"],
-        "cardio_points": cardio_status["points"],
+        # Cardio
+        "cardio_value": cardio["value"],
+        "cardio_ideal": cardio["ideal"],
+        "cardio_deficit": cardio["deficit"],
+        "cardio_excess": cardio["excess"],
+        "cardio_status": cardio["status"],
+        "cardio_points": cardio["points"],
 
+        # Step-Up
+        "step_up_value": step["value"],
+        "step_up_ideal": step["ideal"],
+        "step_up_deficit": step["deficit"],
+        "step_up_excess": step["excess"],
+        "step_up_status": step["status"],
+        "step_up_points": step["points"],
+
+        # Push-Up
+        "push_up_value": push["value"],
+        "push_up_ideal": push["ideal"],
+        "push_up_deficit": push["deficit"],
+        "push_up_excess": push["excess"],
+        "push_up_status": push["status"],
+        "push_up_points": push["points"],
+
+        # Sit-Up
+        "sit_up_value": sit["value"],
+        "sit_up_ideal": sit["ideal"],
+        "sit_up_deficit": sit["deficit"],
+        "sit_up_excess": sit["excess"],
+        "sit_up_status": sit["status"],
+        "sit_up_points": sit["points"],
+
+        # Chin-Up
+        "chin_up_value": chin["value"],
+        "chin_up_ideal": chin["ideal"],
+        "chin_up_deficit": chin["deficit"],
+        "chin_up_excess": chin["excess"],
+        "chin_up_status": chin["status"],
+        "chin_up_points": chin["points"],
+
+        # Sit & Reach
+        "sit_reach_value": reach["value"],
+        "sit_reach_ideal": reach["ideal"],
+        "sit_reach_deficit": reach["deficit"],
+        "sit_reach_excess": reach["excess"],
+        "sit_reach_status": reach["status"],
+        "sit_reach_points": reach["points"],
+
+        # Final
         "aggregate": aggregate,
         "grade": grade,
         "prescription_duration": duration,

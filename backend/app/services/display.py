@@ -1,6 +1,5 @@
 from typing import Dict
 
-
 def print_result(res: Dict):
     if "error" in res:
         print("\nERROR:", res["error"])
@@ -51,6 +50,8 @@ def print_result(res: Dict):
     print("Cardiovascular Endurance Status (Cage-Based):")
     print(f"  Cage achieved    : {res.get('cardio_value', 'NIL')}")
     print(f"  Ideal cage       : {res.get('cardio_ideal', 'NIL')}")
+    print(f"  Deficit          : {res.get('cardio_deficit', 0)}")
+    print(f"  Excess           : {res.get('cardio_excess', 0)}")
     print(f"  Status           : {res.get('cardio_status', 'NIL')}")
     print()
 
@@ -59,6 +60,9 @@ def print_result(res: Dict):
     # =====================================================
     print("Cardiovascular Endurance 2 Status (Step-Up):")
     print(f"  Reps             : {res.get('step_up_value', 'NIL')}")
+    print(f"  Ideal reps       : {res.get('step_up_ideal', 'NIL')}")
+    print(f"  Deficit          : {res.get('step_up_deficit', 0)}")
+    print(f"  Excess           : {res.get('step_up_excess', 0)}")
     print(f"  Status           : {res.get('step_up_status', 'NIL')}")
     print()
 
@@ -67,6 +71,9 @@ def print_result(res: Dict):
     # =====================================================
     print("Muscular Strength Status (Push-Up):")
     print(f"  Reps             : {res.get('push_up_value', 'NIL')}")
+    print(f"  Ideal reps       : {res.get('push_up_ideal', 'NIL')}")
+    print(f"  Deficit          : {res.get('push_up_deficit', 0)}")
+    print(f"  Excess           : {res.get('push_up_excess', 0)}")
     print(f"  Status           : {res.get('push_up_status', 'NIL')}")
     print()
 
@@ -75,6 +82,9 @@ def print_result(res: Dict):
     # =====================================================
     print("Muscular Endurance Status (Sit-Up):")
     print(f"  Reps             : {res.get('sit_up_value', 'NIL')}")
+    print(f"  Ideal reps       : {res.get('sit_up_ideal', 'NIL')}")
+    print(f"  Deficit          : {res.get('sit_up_deficit', 0)}")
+    print(f"  Excess           : {res.get('sit_up_excess', 0)}")
     print(f"  Status           : {res.get('sit_up_status', 'NIL')}")
     print()
 
@@ -83,6 +93,9 @@ def print_result(res: Dict):
     # =====================================================
     print("Muscular Endurance 2 Status (Chin-Up):")
     print(f"  Reps             : {res.get('chin_up_value', 'NIL')}")
+    print(f"  Ideal reps       : {res.get('chin_up_ideal', 'NIL')}")
+    print(f"  Deficit          : {res.get('chin_up_deficit', 0)}")
+    print(f"  Excess           : {res.get('chin_up_excess', 0)}")
     print(f"  Status           : {res.get('chin_up_status', 'NIL')}")
     print()
 
@@ -91,6 +104,9 @@ def print_result(res: Dict):
     # =====================================================
     print("SRS (Sit & Reach):")
     print(f"  Reach (cm)       : {res.get('sit_reach_value', 'NIL')}")
+    print(f"  Ideal reach      : {res.get('sit_reach_ideal', 'NIL')}")
+    print(f"  Deficit          : {res.get('sit_reach_deficit', 0)}")
+    print(f"  Excess           : {res.get('sit_reach_excess', 0)}")
     print(f"  Status           : {res.get('sit_reach_status', 'NIL')}")
     print()
 
