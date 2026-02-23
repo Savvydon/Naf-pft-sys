@@ -37,8 +37,7 @@ export default function OverallRecommendation({ state }) {
           counseling to manage stress and emotional well-being.
         </li>
         <li>
-          <strong>Lifestyle Evaluation:</strong> Identify major stress sources
-          and explore potential lifestyle changes.
+          <strong>Lifestyle Evaluation:</strong> Identify potential lifestyle changes.
         </li>
       </ol>
 
@@ -73,7 +72,7 @@ export default function OverallRecommendation({ state }) {
           <strong>Evaluator Rank:</strong> {state.evaluator_rank || "NIL"}
         </p>
       </div>
-      //Not needed again for now
+      {/* //Not needed again for now */}
       {/* <p>
         <strong>Signature:</strong> .............................
       </p> */}

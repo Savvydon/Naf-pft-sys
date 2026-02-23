@@ -5,7 +5,7 @@ import { computeFitness } from "../services/api";
 export function usePhysicalFitness() {
   const navigate = useNavigate();
 
-  const [formData, setFormData] = useState({
+const [formData, setFormData] = useState({
     year: "",
     fullName: "",
     rank: "",
@@ -14,12 +14,11 @@ export function usePhysicalFitness() {
     email: "",
     appointment: "",
     age: "",
-    sex: "male",
+    sex: "",
     date: "",
     height: "",
     weight: "",
-    cardioMinutes: "",
-    cardioSeconds: "",
+    cardioCage: "",
     stepUp: "",
     pushUp: "",
     sitUp: "",
@@ -57,7 +56,8 @@ export function usePhysicalFitness() {
     if (name === "svcNo") {
       const cleaned = value.replace(/\s/g, "").replace(/[^a-zA-Z0-9/]/g, "");
       const formatted = cleaned.startsWith("NAF") ? cleaned : `NAF${cleaned}`;
-      return setFormData((prev) => ({ ...prev, svcNo: formatted }));
+      setFormData((prev) => ({ ...prev, svcNo: formatted }));
+      return;
     }
 
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -67,7 +67,7 @@ export function usePhysicalFitness() {
     e.preventDefault();
 
     const payload = {
-      year: formData.year,
+      year: Number(formData.year),
       full_name: formData.fullName,
       rank: formData.rank,
       svc_no: formData.svcNo,
@@ -75,12 +75,11 @@ export function usePhysicalFitness() {
       email: formData.email,
       appointment: formData.appointment,
       age: Number(formData.age),
-      sex: formData.sex?.toLowerCase() || "male",
-      date: new Date(formData.date).toISOString().split("T")[0],
+      sex: formData.sex,
+      date: formData.date,
       height: Number(formData.height),
       weight: Number(formData.weight),
-      cardio_minutes: Number(formData.cardioMinutes),
-      cardio_seconds: Number(formData.cardioSeconds),
+      cardio_cage: Number(formData.cardioCage),
       step_up: Number(formData.stepUp),
       push_up: Number(formData.pushUp),
       sit_up: Number(formData.sitUp),
