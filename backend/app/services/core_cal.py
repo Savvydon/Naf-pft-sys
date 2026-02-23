@@ -23,6 +23,9 @@ def determine_age_group(age: int) -> str:
     else:
         return "60+"
 
+def determine_cardio_type(age: int) -> str:
+    return "JOGGING" if age <= 39 else "WALKING"
+
 def compute_bmi(weight_kg: float, height_m: float) -> float:
     return round(weight_kg / (height_m ** 2), 2) if height_m > 0 else 0.0
 
