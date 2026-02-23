@@ -182,7 +182,16 @@ def compute_naf_pft(data) -> Dict:
         "bmi_status": bmi["status"],
         "bmi_points": bmi["points"],
 
-        # Cardio
+        # # Cardio
+        # "cardio_value": cardio["value"],
+        # "cardio_ideal": cardio["ideal"],
+        # "cardio_deficit": cardio["deficit"],
+        # "cardio_excess": cardio["excess"],
+        # "cardio_status": cardio["status"],
+        # "cardio_points": cardio["points"],
+
+        "cardio_type": data.cardio_type,
+        "cardio_cage": cardio["value"],   # IMPORTANT
         "cardio_value": cardio["value"],
         "cardio_ideal": cardio["ideal"],
         "cardio_deficit": cardio["deficit"],

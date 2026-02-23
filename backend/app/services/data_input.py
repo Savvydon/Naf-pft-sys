@@ -50,8 +50,10 @@ def get_user_input():
         except:
             print("Enter valid weight.")
 
-    cardio_type_hint = "jog" if d.age <= 29 else "walk"
+    cardio_type_hint = "jog" if d.age <= 39 else "walk"
+    d.cardio_type = cardio_type_hint
     print(f"\nCardio test for your age group: {cardio_type_hint.upper()}")
+    
 
     while True:
         try:
