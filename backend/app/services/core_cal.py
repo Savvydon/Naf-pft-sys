@@ -1,4 +1,5 @@
 from typing import Dict
+import math
 from .scoring_tables import SCORING
 
 # =========================================================
@@ -29,7 +30,10 @@ def determine_cardio_type(age: int) -> str:
 
 
 def compute_bmi(weight_kg: float, height_m: float) -> float:
-    return round(weight_kg / (height_m ** 2), 2) if height_m > 0 else 0.0
+    if height_m <= 0:
+        return 0.0
+    bmi = weight_kg / (height_m ** 2)
+    return math.ceil(bmi * 100) / 100
 
 
 def compute_ideal_weight(height_m: float, gender: str) -> float:
