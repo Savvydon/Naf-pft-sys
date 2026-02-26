@@ -1,17 +1,15 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 import PhysicalFitness from "./components/PhysicalFitness.jsx";
 import Results from "./components/Results.jsx";
 
-function App() {
+export default function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<PhysicalFitness />} />
-        <Route path="/PhysicalFitness" element={<PhysicalFitness />} />
-        <Route path="/results" element={<Results />} />
-      </Routes>
-    </BrowserRouter>
+    <Routes>
+      {/* Home page */}
+      <Route path="/" element={<PhysicalFitness />} />
+
+      {/* Results page */}
+      <Route path="/results" element={<Results />} />
+    </Routes>
   );
 }
-
-export default App;
