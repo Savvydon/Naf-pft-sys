@@ -102,10 +102,10 @@ export default function Results() {
       console.error(e);
     }
   };
-//This is your email function sir
+//This is your your email code sir
   const sendEmail = async () => {
     try {
-      const response = await fetch(
+      await fetch(
         "https://naf-pft-sys.onrender.com/send-report",
         {
           method: "POST",
@@ -116,13 +116,12 @@ export default function Results() {
           }),
         }
       );
-      if (!response.ok) throw new error ("Failed");
       alert("Report sent successfully!");
-    } catch (err){
+    } catch {
       alert("Failed to send report.");
     }
   };
-//Function to navigatee to home
+
   const goToHome = () => {
     sessionStorage.removeItem("naf_pft_result");
     navigate("/", { replace: true });

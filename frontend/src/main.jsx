@@ -16,9 +16,8 @@ import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import App from "./App";
 
-// ✅ Dynamically set basename: /PhysicalFitness in production, / in dev
-const basename =
-  process.env.NODE_ENV === "production" ? "/PhysicalFitness" : "/";
+// Set basename for production deployment
+const basename = "/PhysicalFitness";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>

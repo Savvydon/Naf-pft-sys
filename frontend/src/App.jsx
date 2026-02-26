@@ -53,14 +53,15 @@ import Results from "./components/Results.jsx";
 export default function App() {
   return (
     <Routes>
-      {/* Home page */}
-      <Route path="/" element={<PhysicalFitness />} />
+      {/* Redirect root to /PhysicalFitness */}
+      <Route path="/" element={<Navigate to="/PhysicalFitness" replace />} />
 
-      {/* Results page */}
-      <Route path="/results" element={<Results />} />
+      {/* Main pages */}
+      <Route path="/PhysicalFitness" element={<PhysicalFitness />} />
+      <Route path="/PhysicalFitness/results" element={<Results />} />
 
-      {/* Catch-all: redirect to home if URL doesn't match */}
-      <Route path="*" element={<Navigate to="/" replace />} />
+      {/* Catch-all: redirect any unknown routes to home */}
+      <Route path="*" element={<Navigate to="/PhysicalFitness" replace />} />
     </Routes>
   );
 }
