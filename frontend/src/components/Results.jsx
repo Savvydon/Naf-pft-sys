@@ -106,8 +106,7 @@ export default function Results() {
   const sendEmail = async () => {
     try {
       const response = await fetch(
-        // "https://naf-pft-sys.onrender.com/send-report",
-        "https://localost:8000/send"
+        "https://naf-pft-sys.onrender.com/send-report",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
