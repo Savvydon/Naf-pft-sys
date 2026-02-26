@@ -13,7 +13,7 @@ export function PhysicalFitnessForm({
 
       <div>
         <label>Full Name:</label>
-        <input name="fullName" type="text" name="fullName" onChange={handleChange} required />
+        <input name="fullName" type="text" onChange={handleChange} required />
       </div>
 
       <div>
