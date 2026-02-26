@@ -1,9 +1,8 @@
 {
-  "redirects": [
+  "rewrites": [
     {
-      "source": "/",
-      "destination": "/PhysicalFitness",
-      "permanent": true
+      "source": "/PhysicalFitness/(.*)",
+      "destination": "/index.html"
     }
   ]
 }
