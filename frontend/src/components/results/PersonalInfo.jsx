@@ -64,7 +64,6 @@ export default function PersonalInfo({ state }) {
       <p><b>Date:</b> {state.date ?? "NIL"}</p>
       <p><b>Height:</b> {state.height ? `${state.height} m` : "NIL"}</p>
       <p><b>Cardio Type:</b> {state.cardio_type ?? "NIL"}</p>
-      <p><b>Cardio Cage:</b> {state.cardio_cage ?? "NIL"}</p>
     </div>
   );
 }

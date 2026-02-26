@@ -174,9 +174,6 @@ export default function StatusGroups({ state }) {
         <p>
           <b>Weight Deficit:</b> {state.weight_deficit ?? 0} kg
         </p>
-        <p>
-          <b>Status:</b> {state.weight_status ?? "NIL"}
-        </p>
       </div>
 
       {/* ================= BMI ================= */}

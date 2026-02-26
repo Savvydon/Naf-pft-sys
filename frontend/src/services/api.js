@@ -1,5 +1,7 @@
 //connecting to the backend
-const BASE_URL = "https://naf-pft-sys.onrender.com/api";
+// const BASE_URL = "https://naf-pft-sys.onrender.com/api";
+const BASE_URL = "http://127.0.0.1:8000/api";
+
 
 
 
