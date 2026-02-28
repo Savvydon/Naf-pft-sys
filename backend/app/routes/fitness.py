@@ -3,7 +3,8 @@ from app.schemas import FitnessInput
 from app.services.naf_pft import compute_naf_pft
 from pydantic import BaseModel
 
-from sqlalchemy.orm import Session, select
+from sqlalchemy.orm import Session
+from sqlalchemy import select
 from typing import List, Optional
 from ..services.database import get_db
 from ..services.models import PFTResult
