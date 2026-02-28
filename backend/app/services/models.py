@@ -32,9 +32,10 @@ class PFTResult(Base):
     bmi_deficit = Column(Float)
     bmi_status = Column(String(50))
 
-    cardio_time = Column(String(20))
+    # cardio_time = Column(String(20))
     cardio_ideal = Column(Float)
-    cardio_status = Column(String(50))
+    # cardio_status = Column(String(50))
+    cardio_cage = Column(String(50))
 
     step_up_value = Column(Integer)
     step_up_ideal = Column(Integer)

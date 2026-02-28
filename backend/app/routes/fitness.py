@@ -29,10 +29,24 @@ async def get_all_pft_results(db: Session = Depends(get_db)):
                 "full_name": r.full_name,
                 "rank": r.rank,
                 "unit": r.unit,
+                "appointment": r.appointment,
                 "age": r.age,
                 "sex": r.sex,
-                "aggregate": float(r.aggregate) if r.aggregate else None,
+                "height": r.height,
+                "weight_current": r.weight_current,
+                "bmi_current": r.bmi_current,
+                "bmi_status": r.bmi_status,
+                "cardio_cage": r.cardio_cage,
+                "step_up_value": r.step_up_value,
+                "push_up_value": r.push_up_value,
+                "sit_up_value": r.sit_up_value,
+                "chin_up_value": r.chin_up_value,
+                "sit_reach_value": r.sit_reach_value,
+                "aggregate": r.aggregate,
                 "grade": r.grade,
+                "prescription_duration": r.prescription_duration,
+                "prescription_days": r.prescription_days,
+                "recommended_activity": r.recommended_activity,
                 "created_at": r.created_at.isoformat() if r.created_at else None,
             
             }
@@ -74,8 +88,7 @@ async def get_pft_result_by_id(
         "weight_current": record.weight_current,
         "bmi_current": record.bmi_current,
         "bmi_status": record.bmi_status,
-        "cardio_time": record.cardio_time,
-        "cardio_status": record.cardio_status,
+        "cardio_cage": record.cardio_cage,
         "step_up_value": record.step_up_value,
         "push_up_value": record.push_up_value,
         "sit_up_value": record.sit_up_value,
@@ -97,7 +110,7 @@ async def get_pft_results_by_svc_no(
     db: Session = Depends(get_db)
 ):
     """
-    Get all PFT results for a specific service number (can return multiple if repeated tests)
+    Get all PFT results for a specific service number
     """
     stmt = (
         select(PFTResult)
@@ -144,7 +157,7 @@ async def update_pft_result(
     db: Session = Depends(get_db)
 ):
     """
-    Update selected fields of an existing PFT result (e.g. evaluator info, grade correction)
+    Update selected fields of an existing PFT result
     """
     stmt = select(PFTResult).where(PFTResult.id == result_id)
     result = db.execute(stmt)
@@ -168,6 +181,27 @@ async def update_pft_result(
         "id": record.id,
         "svc_no": record.svc_no,
         "full_name": record.full_name,
+        "rank": record.rank,
+        "unit": record.unit,
+        "appointment": record.appointment,
+        "age": record.age,
+        "sex": record.sex,
+        "height": record.height,
+        "weight_current": record.weight_current,
+        "bmi_current": record.bmi_current,
+        "bmi_status": record.bmi_status,
+        "cardio_cage": record.cardio_cage,
+        "step_up_value": record.step_up_value,
+        "push_up_value": record.push_up_value,
+        "sit_up_value": record.sit_up_value,
+        "chin_up_value": record.chin_up_value,
+        "sit_reach_value": record.sit_reach_value,
+        "aggregate": record.aggregate,
+        "grade": record.grade,
+        "prescription_duration": record.prescription_duration,
+        "prescription_days": record.prescription_days,
+        "recommended_activity": record.recommended_activity,
+        "created_at": record.created_at.isoformat() if record.created_at else None,
         "updated_fields": list(update_dict.keys()),
         "message": "PFT result updated successfully"
     }
