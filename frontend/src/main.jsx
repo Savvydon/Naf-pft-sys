@@ -6,7 +6,7 @@ import App from "./App";
 // Use basename for production under /PhysicalFitness
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    <BrowserRouter basename="/PhysicalFitness">
+    <BrowserRouter basename="/">
       <App />
     </BrowserRouter>
   </React.StrictMode>
