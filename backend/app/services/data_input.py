@@ -5,7 +5,7 @@ def get_user_input():
         pass
 
     d = Data()
-    d.year         = input("Year: ").strip()
+    d.year         = input("Year").strip()
     d.full_name    = input("Full Name: ").strip()
     d.rank         = input("Rank: ").strip()
     d.svc_no       = input("Service Number: ").strip()
@@ -50,27 +50,32 @@ def get_user_input():
         except:
             print("Enter valid weight.")
 
-    cardio_type_hint = "jog" if d.age <= 39 else "walk"
-    d.cardio_type = cardio_type_hint
+    cardio_type_hint = "jog" if (d.age < 29) else "walk"
     print(f"\nCardio test for your age group: {cardio_type_hint.upper()}")
-    
 
     while True:
         try:
-            cage = int(input("Cardio Cage (1, 2, or 3): ").strip())
-            if cage in [1, 2, 3]:
-                d.cardio_cage = cage
-                break
+            mins = int(input("Cardio time - Minutes: ").strip())
+            if mins >= 0: break
         except:
             pass
-        print("Enter 1, 2, or 3.")
+        print("Enter valid minutes.")
+
+    while True:
+        try:
+            secs = int(input("Cardio time - Seconds (0-59): ").strip())
+            if 0 <= secs <= 59: break
+        except:
+            pass
+        print("Seconds 0-59.")
+
+    d.cardio_minutes = mins
+    d.cardio_seconds = secs
 
     d.step_up   = int(input("3-Minute Step-Up (reps):   ").strip() or 0)
     d.push_up   = int(input("1-Minute Push-Up (reps):   ").strip() or 0)
     d.sit_up    = int(input("1-Minute Sit-Up (reps):    ").strip() or 0)
     d.chin_up   = int(input("Chin-Up / Arm Hang (reps): ").strip() or 0)
     d.sit_reach = int(input("Sit & Reach (cm):          ").strip() or 0)
-    d.evaluator_name    = input("Evaluator Name: ").strip()
-    d.evaluator_rank         = input("Evaluator Rank: ").strip()
 
     return d

@@ -13,7 +13,8 @@ class FitnessInput(BaseModel):
     email: str
     height: float
     weight: float
-    cardio_cage: int
+    cardio_minutes: int
+    cardio_seconds: int
     step_up: int
     push_up: int
     sit_up: int
