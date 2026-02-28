@@ -2,15 +2,15 @@ from fastapi import FastAPI, Depends
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 from app.routes.fitness import router
-from .services.email_service import generate_pdf, send_email_with_pdf
-from .services.database import engine
-from .services.models import Base
-from .services.database import SessionLocal
+from app.services.email_service import generate_pdf, send_email_with_pdf
+from app.services.database import engine
+from app.services.models import Base
+from app.services.database import SessionLocal
 from sqlalchemy.orm import Session
-from .services.models import PFTResult
-from .services.database import SessionLocal
-from .services.naf_pft import compute_naf_pft
-from .services.schemas import InputSchema
+from app.services.models import PFTResult
+from app.services.database import SessionLocal
+from app.services.naf_pft import compute_naf_pft
+from app.services.schemas import InputSchema
 
 
 app = FastAPI()
