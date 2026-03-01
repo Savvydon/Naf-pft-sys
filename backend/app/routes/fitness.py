@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from app.schemas import FitnessInput
+from app.services.schemas import FitnessInput
 from app.services.naf_pft import compute_naf_pft
 from pydantic import BaseModel
 
