@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from sqlalchemy import select
+from sqlalchemy import select, and_
 from typing import List, Optional
 from pydantic import BaseModel
 
@@ -11,17 +11,38 @@ from app.services.naf_pft import compute_naf_pft
 
 router = APIRouter(prefix="/api", tags=["PFT Results"])
 
+# -------------------- RESPONSE MODELS --------------------
+class PFTRecord(BaseModel):
+    id: int
+    svc_no: str
+    full_name: str
+    rank: str
+    unit: str
+    year: int
+    aggregate: Optional[float]
+    grade: Optional[str]
+    created_at: Optional[str]
+
+class PFTSummary(BaseModel):
+    id: int
+    year: int
+    aggregate: Optional[float]
+    grade: Optional[str]
+    created_at: Optional[str]
+
 # -------------------- CREATE / COMPUTE --------------------
 @router.post("/compute", status_code=status.HTTP_201_CREATED)
 def compute_and_save(
     data: InputSchema,
     db: Session = Depends(get_db)
 ):
-    # Prevent duplicate entry (svc_no + year)
+    # 🔒 Prevent duplicate entry (svc_no + year)
     existing = db.execute(
         select(PFTResult).where(
-            (PFTResult.svc_no == data.svc_no) &
-            (PFTResult.year == data.year)
+            and_(
+                PFTResult.svc_no == data.svc_no,
+                PFTResult.year == data.year
+            )
         )
     ).scalars().first()
 
@@ -37,9 +58,7 @@ def compute_and_save(
         raise HTTPException(status_code=400, detail=result["error"])
 
     # Save to database
-    db_result = PFTResult(**{
-        k: v for k, v in result.items() if hasattr(PFTResult, k)
-    })
+    db_result = PFTResult(**{k: v for k, v in result.items() if hasattr(PFTResult, k)})
     db.add(db_result)
     db.commit()
     db.refresh(db_result)
@@ -51,29 +70,29 @@ def compute_and_save(
     }
 
 # -------------------- READ ALL (ADMIN) --------------------
-@router.get("/pft-results", response_model=List[dict])
+@router.get("/pft-results", response_model=List[PFTRecord])
 def get_all_results(db: Session = Depends(get_db)):
     records = db.execute(
         select(PFTResult).order_by(PFTResult.created_at.desc())
     ).scalars().all()
 
     return [
-        {
-            "id": r.id,
-            "svc_no": r.svc_no,
-            "full_name": r.full_name,
-            "rank": r.rank,
-            "unit": r.unit,
-            "year": r.year,
-            "aggregate": r.aggregate,
-            "grade": r.grade,
-            "created_at": r.created_at
-        }
+        PFTRecord(
+            id=r.id,
+            svc_no=r.svc_no,
+            full_name=r.full_name,
+            rank=r.rank,
+            unit=r.unit,
+            year=r.year,
+            aggregate=r.aggregate,
+            grade=r.grade,
+            created_at=r.created_at.isoformat() if r.created_at else None
+        )
         for r in records
     ]
 
 # -------------------- READ BY SERVICE NUMBER (USER) --------------------
-@router.get("/pft-results/svc/{svc_no}", response_model=List[dict])
+@router.get("/pft-results/svc/{svc_no}", response_model=List[PFTSummary])
 def get_by_service_number(svc_no: str, db: Session = Depends(get_db)):
     records = db.execute(
         select(PFTResult).where(PFTResult.svc_no == svc_no)
@@ -83,13 +102,13 @@ def get_by_service_number(svc_no: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="No records found")
 
     return [
-        {
-            "id": r.id,
-            "year": r.year,
-            "aggregate": r.aggregate,
-            "grade": r.grade,
-            "created_at": r.created_at
-        }
+        PFTSummary(
+            id=r.id,
+            year=r.year,
+            aggregate=r.aggregate,
+            grade=r.grade,
+            created_at=r.created_at.isoformat() if r.created_at else None
+        )
         for r in records
     ]
 
@@ -106,7 +125,7 @@ def update_pft_result(
     update: PFTUpdate,
     db: Session = Depends(get_db)
 ):
-    record = db.get(PFTResult, result_id)
+    record = db.query(PFTResult).filter(PFTResult.id == result_id).first()
     if not record:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Record not found")
 
@@ -125,7 +144,7 @@ def update_pft_result(
 # -------------------- DELETE (ADMIN) --------------------
 @router.delete("/pft-results/{result_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_pft_result(result_id: int, db: Session = Depends(get_db)):
-    record = db.get(PFTResult, result_id)
+    record = db.query(PFTResult).filter(PFTResult.id == result_id).first()
     if not record:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Record not found")
 
