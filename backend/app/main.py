@@ -13,7 +13,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:5173",             # local frontend
-        "https://your-hosted-frontend.com"  # production frontend
+        "https://naf-pft-sys.vercel.app/"  # production frontend
     ],
     allow_methods=["*"],
     allow_headers=["*"],
