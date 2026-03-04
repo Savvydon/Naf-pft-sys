@@ -115,11 +115,9 @@ from app.routes.fitness import router as fitness_router
 from app.routes.email import router as email_router
 from app.services.database import engine
 from app.services.models import Base
-from app.schemas import InputSchema
 
 app = FastAPI(title="NAF PFT System")
 
-# CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -127,9 +125,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Routers
 app.include_router(fitness_router)
 app.include_router(email_router)
 
-# Create tables
 Base.metadata.create_all(bind=engine)

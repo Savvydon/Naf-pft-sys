@@ -1,16 +1,17 @@
 from pydantic import BaseModel
+from typing import Optional
 
-class FitnessInput(BaseModel):
+class InputSchema(BaseModel):
     year: int
     full_name: str
     rank: str
     svc_no: str
     unit: str
-    date: str
+    email: str
     appointment: str
     age: int
     sex: str
-    email: str
+    date: str
     height: float
     weight: float
     cardio_cage: int
@@ -18,6 +19,6 @@ class FitnessInput(BaseModel):
     push_up: int
     sit_up: int
     chin_up: int
-    sit_reach: int
+    sit_reach: float
     evaluator_name: str
     evaluator_rank: str
