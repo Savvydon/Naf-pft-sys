@@ -1,4 +1,6 @@
+# app/schemas.py
 from pydantic import BaseModel
+from typing import Optional
 
 class InputSchema(BaseModel):
     year: int
@@ -6,10 +8,11 @@ class InputSchema(BaseModel):
     rank: str
     svc_no: str
     unit: str
+    email: str
     appointment: str
     age: int
     sex: str
-    email: str
+    date: str
     height: float
     weight: float
     cardio_cage: int
@@ -17,6 +20,6 @@ class InputSchema(BaseModel):
     push_up: int
     sit_up: int
     chin_up: int
-    sit_reach: int
+    sit_reach: float
     evaluator_name: str
     evaluator_rank: str
