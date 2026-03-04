@@ -2,7 +2,6 @@ import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 
-# ────────────────────────────────────────────────
 # Best practice: always read from environment variable (Render provides this automatically)
 DATABASE_URL = os.getenv("DATABASE_URL")
 
@@ -14,10 +13,7 @@ if not DATABASE_URL:
         "@dpg-d6idmvsr85hc73a0pcr0-a.oregon-postgres.render.com/naf_pft_sys"
         "?sslmode=require"
     )
-    # WARNING: Remove or comment this block before pushing to Git / deploying!
-    # Better: use python-dotenv + .env file for local dev
-
-# ────────────────────────────────────────────────
+    
 engine = create_engine(
     DATABASE_URL,
     echo=False,                     # set True only for local debugging (logs queries)

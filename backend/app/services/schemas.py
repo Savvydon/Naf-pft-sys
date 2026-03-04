@@ -1,13 +1,11 @@
 from pydantic import BaseModel
 
-
 class InputSchema(BaseModel):
     year: int
     full_name: str
     rank: str
     svc_no: str
     unit: str
-    date: str
     appointment: str
     age: int
     sex: str
