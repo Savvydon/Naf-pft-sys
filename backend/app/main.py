@@ -6,19 +6,23 @@ from app.routes.fitness import router as fitness_router
 from app.services.email_service import generate_pdf, send_email_with_pdf
 
 # -------------------- APP INIT --------------------
-app = FastAPI()
+app = FastAPI(title="NAF PFT System")
 
+# -------------------- CORS --------------------
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://localhost:5173",             # local frontend
+        "https://your-hosted-frontend.com"  # production frontend
+    ],
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Create database tables if they don't exist
+# -------------------- DATABASE --------------------
 Base.metadata.create_all(bind=engine)
 
-# Include the fitness router
+# -------------------- ROUTERS --------------------
 app.include_router(fitness_router)
 
 # -------------------- EMAIL REPORT ROUTE --------------------
