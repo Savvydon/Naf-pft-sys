@@ -212,6 +212,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select
 from typing import List, Optional
 from pydantic import BaseModel
+
+from app.schemas import InputSchema
 from app.services.database import get_db
 from app.services.models import PFTResult
 from app.services.naf_pft import compute_naf_pft
