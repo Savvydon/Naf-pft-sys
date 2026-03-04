@@ -115,6 +115,7 @@ from app.routes.fitness import router as fitness_router
 from app.routes.email import router as email_router
 from app.services.database import engine
 from app.services.models import Base
+from app.schemas import InputSchema
 
 app = FastAPI(title="NAF PFT System")
 
