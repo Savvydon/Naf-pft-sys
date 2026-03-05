@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select
 from typing import List
 
-from app.schemas import FitnessInput, PFTUpdate
+from app.schemas import InputSchema, PFTUpdate
 from app.services.naf_pft import compute_naf_pft
 from app.services.database import get_db
 from app.services.models import PFTResult
