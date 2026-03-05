@@ -27,24 +27,24 @@ class PFTResult(Base):
     chin_up_value = Column(Integer)
     sit_reach_value = Column(Float)
 
-    # These were Float → now JSON to store lists/ranges like [18.0, 24.9]
-    weight_ideal = Column(Float)                     # single value → keep Float
+    # Changed to JSON to store lists like [18.0, 24.9] or [120]
+    weight_ideal = Column(Float)                     # single value, keep Float
     weight_excess = Column(Float)
     weight_deficit = Column(Float)
     weight_status = Column(String(50))
 
-    bmi_ideal = Column(JSON)                         # ← [18.0, 24.9]
+    bmi_ideal = Column(JSON)                         # ← now JSON
     bmi_excess = Column(Float)
     bmi_deficit = Column(Float)
     bmi_points = Column(Integer)
 
     cardio_type = Column(String(20))
     cardio_value = Column(Integer)
-    cardio_ideal = Column(JSON)                      # ← usually [1] or single value
+    cardio_ideal = Column(JSON)                      # ← JSON
     cardio_status = Column(String(20))
     cardio_points = Column(Integer)
 
-    step_up_ideal = Column(JSON)                     # ← single or range
+    step_up_ideal = Column(JSON)                     # ← JSON
     step_up_status = Column(String(20))
     step_up_points = Column(Integer)
 
