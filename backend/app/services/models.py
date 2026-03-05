@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, UniqueConstraint
+# backend/app/services/models.py
+from sqlalchemy import Column, Integer, String, Float, DateTime, UniqueConstraint, JSON
 from sqlalchemy.sql import func
 from .database import Base
 
@@ -24,42 +25,42 @@ class PFTResult(Base):
     push_up_value = Column(Integer)
     sit_up_value = Column(Integer)
     chin_up_value = Column(Integer)
-    sit_reach_value = Column(Float)  # ← changed to Float
+    sit_reach_value = Column(Float)
 
-    # Add these computed fields so they can be saved
-    weight_ideal = Column(Float)
+    # These were Float → changed to JSON to store ranges/lists
+    weight_ideal = Column(Float)                     # can stay Float (single value)
     weight_excess = Column(Float)
     weight_deficit = Column(Float)
     weight_status = Column(String(50))
 
-    bmi_ideal = Column(Float)
+    bmi_ideal = Column(JSON)                         # ← now JSON: [18.0, 24.9]
     bmi_excess = Column(Float)
     bmi_deficit = Column(Float)
     bmi_points = Column(Integer)
 
     cardio_type = Column(String(20))
     cardio_value = Column(Integer)
-    cardio_ideal = Column(Integer)
+    cardio_ideal = Column(JSON)                      # ← now JSON (usually 1, but flexible)
     cardio_status = Column(String(20))
     cardio_points = Column(Integer)
 
-    step_up_ideal = Column(Integer)
+    step_up_ideal = Column(JSON)                     # ← JSON
     step_up_status = Column(String(20))
     step_up_points = Column(Integer)
 
-    push_up_ideal = Column(Integer)
+    push_up_ideal = Column(JSON)                     # ← JSON
     push_up_status = Column(String(20))
     push_up_points = Column(Integer)
 
-    sit_up_ideal = Column(Integer)
+    sit_up_ideal = Column(JSON)                      # ← JSON
     sit_up_status = Column(String(20))
     sit_up_points = Column(Integer)
 
-    chin_up_ideal = Column(Integer)
+    chin_up_ideal = Column(JSON)                     # ← JSON
     chin_up_status = Column(String(20))
     chin_up_points = Column(Integer)
 
-    sit_reach_ideal = Column(Float)
+    sit_reach_ideal = Column(JSON)                   # ← JSON
     sit_reach_status = Column(String(20))
     sit_reach_points = Column(Integer)
 
