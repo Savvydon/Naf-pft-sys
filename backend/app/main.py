@@ -8,7 +8,7 @@ from app.routes.fitness import router
 from app.services.email_service import generate_pdf, send_email_with_pdf
 from app.services.database import engine, get_db
 from app.services.models import Base, PFTResult
-from app.schemas import FitnessInput
+from app.schemas import InputSchema
 from app.services.naf_pft import compute_naf_pft
 
 app = FastAPI(title="NAF Physical Fitness Test API")
@@ -51,7 +51,7 @@ async def send_report(request: ReportRequest):
 
 
 @app.post("/api/compute")
-def compute_pft(data: FitnessInput, db: Session = Depends(get_db)):
+def compute_pft(data: InputSchema, db: Session = Depends(get_db)):
     """
     Compute NAF PFT score, save to database (if not duplicate), return full result.
     """
