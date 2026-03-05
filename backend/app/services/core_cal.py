@@ -43,7 +43,7 @@ def compute_ideal_weight(height_m: float, gender: str) -> float:
 
 
 # =========================================================
-# Status evaluation (RULE-AWARE) – unchanged
+# Status evaluation (unchanged)
 # =========================================================
 
 def evaluate_status(value, cfg, deficit, excess) -> str:
@@ -77,7 +77,7 @@ def evaluate_status(value, cfg, deficit, excess) -> str:
 
 
 # =========================================================
-# Component scoring – unchanged
+# Component scoring (unchanged)
 # =========================================================
 
 def get_component_status(value: float, cfg: dict) -> Dict:
@@ -109,14 +109,13 @@ def get_component_status(value: float, cfg: dict) -> Dict:
 
 
 # =========================================================
-# Main computation – FIXED to return lists for JSON columns
+# Main computation – Updated for JSON columns
 # =========================================================
 
 def compute_naf_pft(data: dict) -> Dict:
-    # -------- Normalize inputs --------
     gender = data.get('sex', '').strip().lower()
     if gender not in ("male", "female"):
-        return {"error": "Invalid or missing gender (must be 'male' or 'female')"}
+        return {"error": "Invalid or missing gender"}
 
     age = data.get('age')
     if not isinstance(age, (int, float)) or age <= 0:
@@ -130,7 +129,6 @@ def compute_naf_pft(data: dict) -> Dict:
 
     cardio_type = determine_cardio_type(int(age))
 
-    # ================= Required fields validation =================
     weight = data.get('weight')
     height = data.get('height')
     cardio_cage = data.get('cardio_cage')
@@ -141,7 +139,6 @@ def compute_naf_pft(data: dict) -> Dict:
     if height <= 0:
         return {"error": "Height must be greater than zero"}
 
-    # ================= COMPONENT CALCULATIONS =================
     bmi_value = compute_bmi(weight, height)
     bmi = get_component_status(bmi_value, table["bmi"])
 
@@ -152,12 +149,9 @@ def compute_naf_pft(data: dict) -> Dict:
     chin = get_component_status(data.get('chin_up', 0), table["chin_up_1min"])
     reach = get_component_status(data.get('sit_reach', 0.0), table["sit_reach_cm"])
 
-    aggregate = sum(
-        x["points"] for x in [bmi, cardio, step, push, sit, chin, reach]
-    )
+    aggregate = sum(x["points"] for x in [bmi, cardio, step, push, sit, chin, reach])
     aggregate = min(100, aggregate)
 
-    # ================= GRADE & PRESCRIPTION =================
     if aggregate >= 90:
         grade = "Excellent"
         duration, days = "Maintain routine", "Maintain routine"
@@ -175,13 +169,10 @@ def compute_naf_pft(data: dict) -> Dict:
         duration, days = "46 minutes and above", "5–6 days per week"
         activity = "Strenuous aerobic activities: Jogging, running, swimming, rope skipping."
 
-    # ================= BODY WEIGHT =================
     ideal_weight = compute_ideal_weight(height, gender)
     weight_diff = round(weight - ideal_weight, 1)
 
-    # ================= FINAL RESPONSE – return lists for JSON columns =================
     return {
-        # ---------- BIO ----------
         "year": data.get("year"),
         "full_name": data.get("full_name"),
         "rank": data.get("rank"),
@@ -195,7 +186,6 @@ def compute_naf_pft(data: dict) -> Dict:
         "weight_current": weight,
         "email": data.get("email"),
 
-        # ---------- BODY WEIGHT ----------
         "weight_ideal": ideal_weight,
         "weight_excess": max(0, weight_diff),
         "weight_deficit": max(0, -weight_diff),
@@ -205,7 +195,6 @@ def compute_naf_pft(data: dict) -> Dict:
             else "Underweight"
         ),
 
-        # ---------- BMI ----------
         "bmi_current": bmi["value"],
         "bmi_ideal": list(bmi["ideal"]) if isinstance(bmi["ideal"], (list, tuple)) else bmi["ideal"],
         "bmi_excess": bmi["excess"],
@@ -213,7 +202,6 @@ def compute_naf_pft(data: dict) -> Dict:
         "bmi_status": bmi["status"],
         "bmi_points": bmi["points"],
 
-        # ---------- CARDIO ----------
         "cardio_type": cardio_type,
         "cardio_cage": cardio_cage,
         "cardio_value": cardio["value"],
@@ -223,7 +211,6 @@ def compute_naf_pft(data: dict) -> Dict:
         "cardio_status": cardio["status"],
         "cardio_points": cardio["points"],
 
-        # ---------- STEP-UP ----------
         "step_up_value": step["value"],
         "step_up_ideal": [step["ideal"]] if isinstance(step["ideal"], (int, float)) else list(step["ideal"]) if isinstance(step["ideal"], (list, tuple)) else step["ideal"],
         "step_up_deficit": step["deficit"],
@@ -231,7 +218,6 @@ def compute_naf_pft(data: dict) -> Dict:
         "step_up_status": step["status"],
         "step_up_points": step["points"],
 
-        # ---------- PUSH-UP ----------
         "push_up_value": push["value"],
         "push_up_ideal": [push["ideal"]] if isinstance(push["ideal"], (int, float)) else list(push["ideal"]) if isinstance(push["ideal"], (list, tuple)) else push["ideal"],
         "push_up_deficit": push["deficit"],
@@ -239,7 +225,6 @@ def compute_naf_pft(data: dict) -> Dict:
         "push_up_status": push["status"],
         "push_up_points": push["points"],
 
-        # ---------- SIT-UP ----------
         "sit_up_value": sit["value"],
         "sit_up_ideal": [sit["ideal"]] if isinstance(sit["ideal"], (int, float)) else list(sit["ideal"]) if isinstance(sit["ideal"], (list, tuple)) else sit["ideal"],
         "sit_up_deficit": sit["deficit"],
@@ -247,7 +232,6 @@ def compute_naf_pft(data: dict) -> Dict:
         "sit_up_status": sit["status"],
         "sit_up_points": sit["points"],
 
-        # ---------- CHIN-UP ----------
         "chin_up_value": chin["value"],
         "chin_up_ideal": [chin["ideal"]] if isinstance(chin["ideal"], (int, float)) else list(chin["ideal"]) if isinstance(chin["ideal"], (list, tuple)) else chin["ideal"],
         "chin_up_deficit": chin["deficit"],
@@ -255,7 +239,6 @@ def compute_naf_pft(data: dict) -> Dict:
         "chin_up_status": chin["status"],
         "chin_up_points": chin["points"],
 
-        # ---------- SIT & REACH ----------
         "sit_reach_value": reach["value"],
         "sit_reach_ideal": [reach["ideal"]] if isinstance(reach["ideal"], (int, float)) else list(reach["ideal"]) if isinstance(reach["ideal"], (list, tuple)) else reach["ideal"],
         "sit_reach_deficit": reach["deficit"],
@@ -263,16 +246,13 @@ def compute_naf_pft(data: dict) -> Dict:
         "sit_reach_status": reach["status"],
         "sit_reach_points": reach["points"],
 
-        # ---------- SUMMARY ----------
         "aggregate": aggregate,
         "grade": grade,
 
-        # ---------- PRESCRIPTION ----------
         "prescription_duration": duration,
         "prescription_days": days,
         "recommended_activity": activity,
 
-        # ---------- EVALUATOR ----------
         "evaluator_name": data.get("evaluator_name"),
         "evaluator_rank": data.get("evaluator_rank"),
     }
