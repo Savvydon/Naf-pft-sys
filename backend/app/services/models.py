@@ -67,61 +67,47 @@
 #     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 
-from sqlalchemy import (
-    Column, Integer, String, Float, DateTime,
-    UniqueConstraint, Text
-)
-from sqlalchemy.orm import declarative_base
+from sqlalchemy import Column, Integer, String, Float, DateTime, UniqueConstraint
 from sqlalchemy.sql import func
-
-Base = declarative_base()
-
+from .database import Base
 
 class PFTResult(Base):
     __tablename__ = "pft_results"
 
-    __table_args__ = (
-        UniqueConstraint("svc_no", "year", name="uq_svc_year"),
-    )
-
     id = Column(Integer, primary_key=True, index=True)
-
-    # --- Bio ---
     year = Column(Integer, nullable=False)
-    full_name = Column(String, nullable=False)
-    rank = Column(String, nullable=False)
-    svc_no = Column(String, nullable=False, index=True)
-    unit = Column(String, nullable=False)
-    appointment = Column(String)
-    age = Column(Integer)
-    sex = Column(String)
-    email = Column(String)
+    svc_no = Column(String(50), nullable=False)
 
-    # --- Body ---
+    full_name = Column(String(100))
+    rank = Column(String(50))
+    unit = Column(String(100))
+    appointment = Column(String(100))
+    age = Column(Integer)
+    sex = Column(String(10))
     height = Column(Float)
     weight_current = Column(Float)
     bmi_current = Column(Float)
-    bmi_status = Column(String)
-
-    # --- Scores ---
+    bmi_status = Column(String(20))
     cardio_cage = Column(Integer)
     step_up_value = Column(Integer)
     push_up_value = Column(Integer)
     sit_up_value = Column(Integer)
     chin_up_value = Column(Integer)
     sit_reach_value = Column(Integer)
+    aggregate = Column(Float)
+    grade = Column(String(20))
+    prescription_duration = Column(String(50))
+    prescription_days = Column(String(50))
+    recommended_activity = Column(String(255))
 
-    aggregate = Column(Integer)
-    grade = Column(String)
+    evaluator_name = Column(String(100))
+    evaluator_rank = Column(String(50))
+    notes = Column(String(500), nullable=True)
 
-    prescription_duration = Column(String)
-    prescription_days = Column(String)
-    recommended_activity = Column(Text)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
-    # --- Evaluator (ADMIN ONLY UPDATABLE) ---
-    evaluator_name = Column(String)
-    evaluator_rank = Column(String)
-    notes = Column(Text)
-
-    created_at = Column(DateTime, server_default=func.now())
-    updated_at = Column(DateTime, onupdate=func.now())
+    # ← UNIQUE CONSTRAINT (svc_no + year)
+    __table_args__ = (
+        UniqueConstraint('svc_no', 'year', name='uq_svc_no_year'),
+    )
