@@ -111,33 +111,51 @@ def get_component_status(value: float, cfg: dict) -> Dict:
 
 
 # =========================================================
-# Main computation
+# Main computation – FIXED VERSION (accepts dict from FastAPI)
 # =========================================================
 
-def compute_naf_pft(data) -> Dict:
+def compute_naf_pft(data: dict) -> Dict:
+    """
+    Compute NAF PFT result from a dictionary (from FastAPI InputSchema.model_dump()).
+    """
     # -------- Normalize inputs --------
-    gender = data.sex.strip().lower()
+    gender = data.get('sex', '').strip().lower()
     if gender not in ("male", "female"):
-        return {"error": "Invalid gender"}
+        return {"error": "Invalid or missing gender (must be 'male' or 'female')"}
 
-    age_group = determine_age_group(data.age)
+    age = data.get('age')
+    if not isinstance(age, (int, float)) or age <= 0:
+        return {"error": "Invalid or missing age (must be positive number)"}
+
+    age_group = determine_age_group(int(age))
 
     table = SCORING.get(gender, {}).get(age_group)
     if not table:
-        return {"error": "No scoring table found"}
+        return {"error": f"No scoring table found for gender '{gender}' and age group '{age_group}'"}
 
-    cardio_type = determine_cardio_type(data.age)
+    cardio_type = determine_cardio_type(int(age))
+
+    # ================= Required fields validation =================
+    weight = data.get('weight')
+    height = data.get('height')
+    cardio_cage = data.get('cardio_cage')
+
+    if not all(isinstance(v, (int, float)) for v in [weight, height, cardio_cage]):
+        return {"error": "Missing or invalid required fields: weight, height, cardio_cage"}
+
+    if height <= 0:
+        return {"error": "Height must be greater than zero"}
 
     # ================= COMPONENT CALCULATIONS =================
-    bmi_value = compute_bmi(data.weight, data.height)
+    bmi_value = compute_bmi(weight, height)
     bmi = get_component_status(bmi_value, table["bmi"])
 
-    cardio = get_component_status(data.cardio_cage, table["cardio"])
-    step = get_component_status(data.step_up, table["step_up_3min"])
-    push = get_component_status(data.push_up, table["push_up_1min"])
-    sit = get_component_status(data.sit_up, table["sit_up_1min"])
-    chin = get_component_status(data.chin_up, table["chin_up_1min"])
-    reach = get_component_status(data.sit_reach, table["sit_reach_cm"])
+    cardio = get_component_status(cardio_cage, table["cardio"])
+    step = get_component_status(data.get('step_up', 0), table["step_up_3min"])
+    push = get_component_status(data.get('push_up', 0), table["push_up_1min"])
+    sit = get_component_status(data.get('sit_up', 0), table["sit_up_1min"])
+    chin = get_component_status(data.get('chin_up', 0), table["chin_up_1min"])
+    reach = get_component_status(data.get('sit_reach', 0.0), table["sit_reach_cm"])
 
     aggregate = sum(
         x["points"] for x in [bmi, cardio, step, push, sit, chin, reach]
@@ -163,24 +181,24 @@ def compute_naf_pft(data) -> Dict:
         activity = "Strenuous aerobic activities: Jogging, running, swimming, rope skipping."
 
     # ================= BODY WEIGHT =================
-    ideal_weight = compute_ideal_weight(data.height, gender)
-    weight_diff = round(data.weight - ideal_weight, 1)
+    ideal_weight = compute_ideal_weight(height, gender)
+    weight_diff = round(weight - ideal_weight, 1)
 
     # ================= FINAL RESPONSE =================
     return {
         # ---------- BIO ----------
-        "year": data.year,
-        "full_name": data.full_name,
-        "rank": data.rank,
-        "svc_no": data.svc_no,
-        "unit": data.unit,
-        "appointment": data.appointment,
-        "age": data.age,
-        "date": data.date,
-        "sex": data.sex.upper(),
-        "height": data.height,
-        "weight_current": data.weight,
-        "email": data.email,
+        "year": data.get("year"),
+        "full_name": data.get("full_name"),
+        "rank": data.get("rank"),
+        "svc_no": data.get("svc_no"),
+        "unit": data.get("unit"),
+        "appointment": data.get("appointment"),
+        "age": age,
+        "date": data.get("date"),
+        "sex": gender.upper(),
+        "height": height,
+        "weight_current": weight,
+        "email": data.get("email"),
 
         # ---------- BODY WEIGHT ----------
         "weight_ideal": ideal_weight,
@@ -202,7 +220,7 @@ def compute_naf_pft(data) -> Dict:
 
         # ---------- CARDIO ----------
         "cardio_type": cardio_type,
-        "cardio_cage": data.cardio_cage,
+        "cardio_cage": cardio_cage,
         "cardio_value": cardio["value"],
         "cardio_ideal": cardio["ideal"],
         "cardio_deficit": cardio["deficit"],
@@ -260,6 +278,6 @@ def compute_naf_pft(data) -> Dict:
         "recommended_activity": activity,
 
         # ---------- EVALUATOR ----------
-        "evaluator_name": data.evaluator_name,
-        "evaluator_rank": data.evaluator_rank,
+        "evaluator_name": data.get("evaluator_name"),
+        "evaluator_rank": data.get("evaluator_rank"),
     }
