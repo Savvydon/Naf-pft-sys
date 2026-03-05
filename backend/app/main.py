@@ -151,6 +151,7 @@
 # print("-- MAIN.PY FULLY LOADED --")
 
 # backend/app/main.py
+# backend/app/main.py
 import os
 import sys
 import traceback
@@ -161,7 +162,7 @@ print("Python version:", sys.version.strip())
 print("Current working dir:", os.getcwd())
 print("DATABASE_URL present?", "yes" if os.getenv("DATABASE_URL") else "NO - MISSING!")
 
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -183,7 +184,11 @@ except ImportError as e:
     traceback.print_exc(file=sys.stdout)
     sys.exit(1)
 
-app = FastAPI(title="NAF Physical Fitness Test API")
+app = FastAPI(
+    title="NAF Physical Fitness Test API",
+    description="API for Nigerian Air Force Physical Fitness Test computation and storage",
+    version="1.0.0",
+)
 
 print("FastAPI app instance created")
 
@@ -198,29 +203,6 @@ app.add_middleware(
 print("CORS middleware added")
 app.include_router(router)
 print("Router included")
-
-
-# ====================== HELPER: Normalize Service Number ======================
-def normalize_svc_no(svc_no: str) -> str:
-    """Clean and normalize service number (handles NAF/2670, NAF24/3319, etc.)"""
-    if not svc_no:
-        return "NAF"
-
-    cleaned = (
-        svc_no.strip()
-        .replace(" ", "")           # remove spaces
-        .replace("-", "")           # remove dashes
-        .upper()
-    )
-
-    # Collapse multiple slashes
-    cleaned = "/".join(filter(None, cleaned.split("/")))
-
-    # Ensure it starts with NAF
-    if not cleaned.startswith("NAF"):
-        cleaned = "NAF" + cleaned
-
-    return cleaned
 
 
 # ====================== HEALTH CHECK ======================
@@ -259,11 +241,18 @@ async def send_report(request: ReportRequest):
     raise HTTPException(503, "Failed to send email")
 
 
-# ====================== CHECK EXISTS (FIXED) ======================
-@app.get("/api/exists/{svc_no}/{year}")
-def check_exists(svc_no: str, year: int, db: Session = Depends(get_db)):
-    """Handle service numbers like NAF24/3319, NAF/2291, etc."""
-    svc_no = normalize_svc_no(svc_no)
+# ====================== CHECK EXISTS – FIXED FOR SLASHES ======================
+@app.get("/api/exists/{svc_no_path}/{year}")
+def check_exists(svc_no_path: str, year: int, db: Session = Depends(get_db)):
+    """
+    Handles service numbers with slashes like NAF82/2220, NAF/2291, etc.
+    The path parameter svc_no_path can contain / characters.
+    """
+    # svc_no_path comes as e.g. "NAF82/2220" or "NAF/2291"
+    # We do NOT split it — we treat the entire string as svc_no
+    svc_no = svc_no_path.strip()
+
+    print(f"Checking existence for svc_no: '{svc_no}', year: {year}")
 
     exists = (
         db.query(PFTResult)
@@ -271,18 +260,32 @@ def check_exists(svc_no: str, year: int, db: Session = Depends(get_db)):
         .first()
         is not None
     )
+
     return {"exists": exists, "svc_no": svc_no, "year": year}
 
 
-# ====================== COMPUTE PFT (FIXED) ======================
+# ====================== COMPUTE PFT – FIXED FOR SLASHES ======================
 @app.post("/api/compute")
 def compute_pft(data: InputSchema, db: Session = Depends(get_db)):
+    """
+    Accepts full service number with slashes (e.g. NAF82/2220).
+    Normalizes it before processing.
+    """
     if not (2000 <= data.year <= 2100):
         raise HTTPException(422, "Year must be between 2000 and 2100")
 
-    # Normalize service number before processing
+    # Create a copy and normalize svc_no (keeps slashes)
     data_dict = data.model_dump()
-    data_dict["svc_no"] = normalize_svc_no(data_dict.get("svc_no", ""))
+    svc_no_raw = data_dict.get("svc_no", "").strip()
+
+    # Keep slashes — do NOT remove them
+    svc_no_clean = "/".join(part.strip() for part in svc_no_raw.split("/"))
+    if not svc_no_clean.startswith("NAF"):
+        svc_no_clean = "NAF" + svc_no_clean
+
+    data_dict["svc_no"] = svc_no_clean
+
+    print(f"Processing compute for svc_no: '{svc_no_clean}', year: {data.year}")
 
     result = compute_naf_pft(data_dict)
 
