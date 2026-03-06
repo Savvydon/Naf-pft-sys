@@ -69,8 +69,6 @@ export function usePhysicalFitness() {
 
       cleaned = cleaned.replace(/\/+/g, "/");
 
-      console.log("Cleaned svcNo:", cleaned);
-
       setFormData((prev) => ({ ...prev, svcNo: cleaned }));
       return;
     }
