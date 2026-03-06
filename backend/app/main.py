@@ -324,7 +324,6 @@
 
 
 # print("-- MAIN.PY FULLY LOADED --")
-
 # backend/app/main.py
 import os
 import sys
@@ -414,13 +413,28 @@ async def send_report(request: ReportRequest):
     raise HTTPException(503, "Failed to send email")
 
 
-@app.get("/api/exists/{svc_no}/{year}")
-def check_exists(svc_no: str, year: int, db: Session = Depends(get_db)):
+# ── FIXED ROUTE: Accepts three segments and merges first two ──
+@app.get("/api/exists/{part1}/{part2}/{year}")
+def check_exists(part1: str, part2: str, year: int, db: Session = Depends(get_db)):
     """
-    svc_no can contain slashes (e.g. NAF24/3390)
-    The frontend must send it encoded as NAF24%2F3390
+    Smart handling for service numbers like NAF24/3390
+    - part1 = "NAF24"
+    - part2 = "3390"
+    - year = 2026
+    → merges to svc_no = "NAF24/3390"
+    Also works if no slash: part1 = "NAF243390", part2 = ignored or empty
     """
-    print(f"Received svc_no: '{svc_no}', year: {year}")
+    # Merge first two parts with slash
+    svc_no = f"{part1}/{part2}".strip("/")
+
+    # Clean up any double slashes or junk
+    svc_no = "/".join(filter(None, svc_no.split("/")))
+
+    # Ensure starts with NAF
+    if not svc_no.startswith("NAF"):
+        svc_no = "NAF" + svc_no
+
+    print(f"Merged svc_no: '{svc_no}', year: {year}")
 
     exists = (
         db.query(PFTResult)
@@ -439,8 +453,15 @@ def compute_pft(data: InputSchema, db: Session = Depends(get_db)):
 
     data_dict = data.model_dump()
 
-    # Log the incoming service number (should contain / if sent correctly)
-    print(f"Compute request - svc_no: '{data_dict.get('svc_no')}', year: {data.year}")
+    # Normalize svc_no in payload too (optional but good)
+    svc_no = data_dict.get("svc_no", "").strip()
+    if '/' in svc_no:
+        svc_no = "/".join(part.strip() for part in svc_no.split("/"))
+    if not svc_no.startswith("NAF"):
+        svc_no = "NAF" + svc_no
+    data_dict["svc_no"] = svc_no
+
+    print(f"Compute - svc_no: '{svc_no}', year: {data.year}")
 
     result = compute_naf_pft(data_dict)
 
