@@ -2,7 +2,7 @@
 const BASE_URL = "/api";
 
 // For production build (if needed – usually not required)
-const PROD_BASE_URL = "https://naf-pft-sys-1.onrender.com/api";
+const PROD_BASE_URL = "https://naf-pft-sys.onrender.com/api";
 
 export async function computeFitness(payload) {
   try {
