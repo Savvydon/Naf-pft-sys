@@ -20,7 +20,7 @@ class InputSchema(BaseModel):
     push_up: int
     sit_up: int
     chin_up: int
-    sit_reach: float          # note: you had int in frontend, but here float — keep consistent
+    sit_reach: int      
     evaluator_name: str
     evaluator_rank: str
 
@@ -44,7 +44,7 @@ class PFTUpdate(BaseModel):
     push_up: Optional[int] = None
     sit_up: Optional[int] = None
     chin_up: Optional[int] = None
-    sit_reach: Optional[float] = None
+    sit_reach: Optional[int] = None
     evaluator_name: Optional[str] = None
     evaluator_rank: Optional[str] = None
     notes: Optional[str] = None
