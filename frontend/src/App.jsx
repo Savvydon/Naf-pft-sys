@@ -38,10 +38,9 @@ function EvaluatorProtectedRoute({ children }) {
   const { token, authLoading } = useAuth();
 
   if (authLoading) {
-    return <div>Loading authentication...</div>; // or spinner
+    return <div>Loading authentication...</div>; // or a spinner component
   }
 
-  // If not logged in → redirect to evaluator login
   if (!token) {
     return <Navigate to="/login" replace />;
   }
@@ -49,7 +48,7 @@ function EvaluatorProtectedRoute({ children }) {
   return children;
 }
 
-// Optional: redirect logged-in users away from login page
+// Redirect logged-in users away from login page
 function EvaluatorLoginRedirect({ children }) {
   const { token } = useAuth();
 
@@ -63,30 +62,30 @@ function EvaluatorLoginRedirect({ children }) {
 export default function App() {
   return (
     <Routes>
-      {/* Public routes - no auth required */}
+      {/* Public / unprotected routes (admin pages open for now) */}
       <Route path="/admin/login" element={<AdminLogin />} />
       <Route path="/admin/dashboard" element={<AdminDashboard />} />
       <Route path="/admin/personnel" element={<PersonnelList />} />
       <Route path="/admin/personnel/:id" element={<PersonnelDetails />} />
       <Route path="/admin/personnel/:id/edit" element={<PersonnelEdit />} />
 
-      {/* Evaluator routes - protected */}
+      {/* Evaluator login page */}
+      <Route
+        path="/login"
+        element={
+          <EvaluatorLoginRedirect>
+            <AdminLogin /> {/* Reuse your evaluator login component */}
+          </EvaluatorLoginRedirect>
+        }
+      />
+
+      {/* Protected evaluator pages */}
       <Route element={<EvaluatorProtectedRoute />}>
         <Route path="/" element={<PhysicalFitness />} />
         <Route path="/results" element={<Results />} />
       </Route>
 
-      {/* Evaluator login page - redirect if already logged in */}
-      <Route
-        path="/login"
-        element={
-          <EvaluatorLoginRedirect>
-            <AdminLogin /> {/* Reuse the same login component for evaluator */}
-          </EvaluatorLoginRedirect>
-        }
-      />
-
-      {/* Catch-all - redirect to home */}
+      {/* Catch-all redirect to home */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
