@@ -2,9 +2,10 @@ fastapi
 uvicorn[standard]
 sqlalchemy
 psycopg2-binary>=2.9.9     # ← add this (most reliable & easiest on Render)
-# OR (modern alternative, many prefer this now):
-# psycopg[binary]>=3.1.18
 pydantic>=2.0
 python-dotenv
 reportlab
+python-multipart==0.0.7
 aiosmtplib
+python-jose[cryptography]
+passlib[bcrypt]

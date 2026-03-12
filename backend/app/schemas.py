@@ -20,7 +20,7 @@ class InputSchema(BaseModel):
     push_up: int
     sit_up: int
     chin_up: int
-    sit_reach: int      
+    sit_reach: int
     evaluator_name: str
     evaluator_rank: str
 

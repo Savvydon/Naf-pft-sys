@@ -16,11 +16,9 @@ export default function Results() {
   const navigate = useNavigate();
   const resultsRef = useRef(null);
 
-  // Restore state from sessionStorage or redirect
   const state =
     location.state || JSON.parse(sessionStorage.getItem("naf_pft_result"));
 
-  // Redirect to home if no state (refresh-safe)
   useEffect(() => {
     if (!state) {
       navigate("/", { replace: true });
@@ -29,101 +27,128 @@ export default function Results() {
 
   if (!state) return null;
 
-  // PDF Download
-  const downloadPDF = async () => {
+  // ---------- GENERATE PDF ----------
+  const generatePDF = async () => {
     const input = resultsRef.current;
-    if (!input) return;
+    if (!input) return null;
 
-    try {
-      input.classList.add("pdf-mode");
-      await new Promise((r) => setTimeout(r, 300));
+    input.classList.add("pdf-mode");
+    await new Promise((r) => setTimeout(r, 300));
 
-      const canvas = await html2canvas(input, {
-        scale: 2,
-        backgroundColor: "#ffffff",
-        windowWidth: 924,
-      });
+    const canvas = await html2canvas(input, {
+      scale: 2,
+      backgroundColor: "#ffffff",
+      windowWidth: 924,
+    });
 
-      const pdf = new jsPDF("p", "mm", "a4");
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
+    const pdf = new jsPDF("p", "mm", "a4");
 
-      const marginX = 15;
-      const marginY = 20;
-      const usableWidth = pageWidth - marginX * 2;
-      const ratio = usableWidth / canvas.width;
-      const pageCanvasHeight = (pageHeight - marginY * 2) / ratio;
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
 
-      let renderedHeight = 0;
+    const marginX = 15;
+    const marginY = 20;
+    const usableWidth = pageWidth - marginX * 2;
 
-      while (renderedHeight < canvas.height) {
-        const sliceHeight = Math.min(
-          pageCanvasHeight,
-          canvas.height - renderedHeight,
-        );
+    const ratio = usableWidth / canvas.width;
+    const pageCanvasHeight = (pageHeight - marginY * 2) / ratio;
 
-        const tempCanvas = document.createElement("canvas");
-        tempCanvas.width = canvas.width;
-        tempCanvas.height = sliceHeight;
+    let renderedHeight = 0;
 
-        const ctx = tempCanvas.getContext("2d");
-        ctx.drawImage(
-          canvas,
-          0,
-          renderedHeight,
-          canvas.width,
-          sliceHeight,
-          0,
-          0,
-          canvas.width,
-          sliceHeight,
-        );
+    while (renderedHeight < canvas.height) {
+      const sliceHeight = Math.min(
+        pageCanvasHeight,
+        canvas.height - renderedHeight,
+      );
 
-        pdf.addImage(
-          tempCanvas.toDataURL("image/png"),
-          "PNG",
-          marginX,
-          marginY,
-          usableWidth,
-          sliceHeight * ratio,
-        );
+      const tempCanvas = document.createElement("canvas");
+      tempCanvas.width = canvas.width;
+      tempCanvas.height = sliceHeight;
 
-        renderedHeight += sliceHeight;
-        if (renderedHeight < canvas.height) pdf.addPage();
+      const ctx = tempCanvas.getContext("2d");
+
+      ctx.drawImage(
+        canvas,
+        0,
+        renderedHeight,
+        canvas.width,
+        sliceHeight,
+        0,
+        0,
+        canvas.width,
+        sliceHeight,
+      );
+
+      pdf.addImage(
+        tempCanvas.toDataURL("image/png"),
+        "PNG",
+        marginX,
+        marginY,
+        usableWidth,
+        sliceHeight * ratio,
+      );
+
+      renderedHeight += sliceHeight;
+
+      if (renderedHeight < canvas.height) {
+        pdf.addPage();
       }
+    }
+
+    input.classList.remove("pdf-mode");
+
+    return pdf;
+  };
+
+  // ---------- DOWNLOAD PDF ----------
+  const downloadPDF = async () => {
+    try {
+      const pdf = await generatePDF();
+      if (!pdf) return;
 
       pdf.save(`NAF_PFT_${state.svc_no || "RESULT"}.pdf`);
-      input.classList.remove("pdf-mode");
     } catch (e) {
-      console.error(e);
+      console.error("PDF download error:", e);
     }
   };
 
-  // Email Report
+  // ---------- SEND EMAIL ----------
   const sendEmail = async () => {
+    console.log("=== Send Email clicked ===");
+    console.log("Sending to:", state.email);
+    console.log("Service No:", state.svc_no);
+    console.log("Name:", state.full_name);
+
     try {
+      const pdf = await generatePDF();
+
+      if (!pdf) throw new Error("Failed to generate PDF");
+
+      const pdfBlob = pdf.output("blob");
+
+      const formData = new FormData();
+      formData.append("email", state.email);
+      formData.append("file", pdfBlob, "NAF_PFT_Report.pdf");
+
       const res = await fetch("https://naf-pft-sys.onrender.com/send-report", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: state.email,
-          report_data: state,
-        }),
+        body: formData,
       });
 
-      const data = await res.json();
-
       if (!res.ok) {
-        throw new Error(data.message || "Email failed");
+        const errText = await res.text();
+        console.error("Server error:", errText);
+        throw new Error("Email failed");
       }
 
       alert("Report sent successfully!");
     } catch (err) {
-      alert(err.message || "Failed to send report.");
+      console.error("Send email failed:", err);
+      alert("Failed to send email.");
     }
   };
 
-  //Back to Home
+  // ---------- BACK HOME ----------
   const goToHome = () => {
     sessionStorage.removeItem("naf_pft_result");
     navigate("/", { replace: true });

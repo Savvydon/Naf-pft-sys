@@ -1,4 +1,4 @@
-// frontend/src/components/usePhysicalFitness.jsx
+// components/usePhysicalFitness.jsx
 import { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { computeFitness } from "../services/api";
@@ -7,7 +7,7 @@ export function usePhysicalFitness() {
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
-    year: "",
+    year: new Date().getFullYear().toString(),
     fullName: "",
     rank: "",
     svcNo: "NAF",
@@ -16,7 +16,7 @@ export function usePhysicalFitness() {
     appointment: "",
     age: "",
     sex: "",
-    date: "",
+    date: new Date().toISOString().split("T")[0],
     height: "",
     weight: "",
     cardioCage: "",
@@ -25,8 +25,8 @@ export function usePhysicalFitness() {
     sitUp: "",
     chinUp: "",
     sitReach: "",
-    evaluatorName: "",
-    evaluatorRank: "",
+    // evaluatorName & evaluatorRank removed from form state
+    // → backend sets them from token
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -95,41 +95,38 @@ export function usePhysicalFitness() {
 
         if (!svcNo.startsWith("NAF") || svcNo.length < 5) {
           alert(
-            "Service Number must start with 'NAF' and be at least 5 characters.",
+            "Service Number must start with 'NAF' and be at least 5 characters long.",
           );
           return;
         }
 
         const year = parseNumber(formData.year);
         if (!year || year < 2000 || year > 2100) {
-          alert("Year must be between 2000 and 2100.");
+          alert("Year must be a valid number between 2000 and 2100.");
           return;
         }
 
-        // ── FIXED: encode the full svcNo including slash ──
         const encodedSvcNo = encodeURIComponent(svcNo);
         const checkUrl = `/api/exists/${encodedSvcNo}/${year}`;
 
-        // console.log("Final svcNo:", svcNo);
-        // console.log("Encoded svcNo:", encodedSvcNo);
-        // console.log("Exists check URL:", checkUrl);
+        console.log("Checking duplicate at:", checkUrl);
 
         const checkRes = await fetch(checkUrl, {
           method: "GET",
-          headers: { Accept: "application/json" },
+          headers: {
+            Accept: "application/json",
+            Authorization: `Bearer ${localStorage.getItem("pft_token") || ""}`,
+          },
         });
 
         if (!checkRes.ok) {
-          const errorText = await checkRes.text().catch(() => "No response");
-          throw new Error(
-            `Check failed (HTTP ${checkRes.status}) - ${errorText}`,
-          );
+          throw new Error(`Duplicate check failed (HTTP ${checkRes.status})`);
         }
 
         const checkData = await checkRes.json();
 
         if (checkData.exists === true) {
-          alert(`Record already exists for ${svcNo} in ${year}.`);
+          alert(`A record already exists for ${svcNo} in year ${year}.`);
           return;
         }
 
@@ -152,16 +149,19 @@ export function usePhysicalFitness() {
           sit_up: parseNumber(formData.sitUp) ?? 0,
           chin_up: parseNumber(formData.chinUp) ?? 0,
           sit_reach: parseNumber(formData.sitReach) ?? 0,
-          evaluator_name: (formData.evaluatorName || "").trim(),
-          evaluator_rank: formData.evaluatorRank || "",
+          // evaluator_name and evaluator_rank are NOT sent anymore
+          // backend will set them from the authenticated user
         };
+
+        console.log("Submitting payload:", payload);
 
         const result = await computeFitness(payload);
 
         sessionStorage.setItem("naf_pft_result", JSON.stringify(result));
         navigate("/results", { state: result });
       } catch (error) {
-        alert(error.message || "Failed to submit. Check console for details.");
+        console.error("Submission error:", error);
+        alert(error.message || "Failed to submit. Please try again.");
       } finally {
         setIsSubmitting(false);
       }

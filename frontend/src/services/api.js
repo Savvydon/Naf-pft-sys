@@ -1,12 +1,12 @@
-// Use relative path → goes through Vite proxy in dev
-const BASE_URL = "/api";
-
-// For production build (if needed – usually not required)
-const PROD_BASE_URL = "https://naf-pft-sys.onrender.com/api";
+const BASE_URL = import.meta.env.DEV
+  ? "/api"
+  : "https://naf-pft-sys-1.onrender.com/api";
 
 export async function computeFitness(payload) {
   try {
-    const url = `${BASE_URL}/compute`; // ← relative now!
+    const url = `${BASE_URL}/compute`;
+
+    console.log("Submitting to:", url); // debug – very helpful
 
     const response = await fetch(url, {
       method: "POST",
@@ -38,7 +38,10 @@ export async function computeFitness(payload) {
         );
       }
       if (response.status >= 500) {
-        throw new Error("Server error – please try again later");
+        throw new Error(
+          data.detail ||
+            "Server error – backend may be starting up (Render cold start). Try again in 30 seconds.",
+        );
       }
 
       throw new Error(

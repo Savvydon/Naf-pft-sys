@@ -8,7 +8,6 @@ import Header from "../../components/results/Header";
 import PersonalInfo from "../../components/results/PersonalInfo";
 import StatusGroups from "../../components/results/StatusGroups";
 import OverallRecommendation from "../../components/results/OverallRecommendation";
-import "../../styles/Results.css";
 
 export default function PersonnelDetails() {
   const { id } = useParams();
@@ -80,7 +79,10 @@ export default function PersonnelDetails() {
       let renderedHeight = 0;
 
       while (renderedHeight < canvas.height) {
-        const sliceHeight = Math.min(pageCanvasHeight, canvas.height - renderedHeight);
+        const sliceHeight = Math.min(
+          pageCanvasHeight,
+          canvas.height - renderedHeight,
+        );
 
         const tempCanvas = document.createElement("canvas");
         tempCanvas.width = canvas.width;
@@ -96,7 +98,7 @@ export default function PersonnelDetails() {
           0,
           0,
           canvas.width,
-          sliceHeight
+          sliceHeight,
         );
 
         pdf.addImage(
@@ -105,14 +107,16 @@ export default function PersonnelDetails() {
           marginX,
           marginY,
           usableWidth,
-          sliceHeight * ratio
+          sliceHeight * ratio,
         );
 
         renderedHeight += sliceHeight;
         if (renderedHeight < canvas.height) pdf.addPage();
       }
 
-      pdf.save(`NAF_PFT_${person.svc_no || "RESULT"}_${person.year || "Unknown"}.pdf`);
+      pdf.save(
+        `NAF_PFT_${person.svc_no || "RESULT"}_${person.year || "Unknown"}.pdf`,
+      );
 
       input.classList.remove("pdf-mode");
     } catch (err) {
@@ -170,10 +174,16 @@ export default function PersonnelDetails() {
 
       {/* Admin + extra actions */}
       <div className="actions">
-        <button className="back-btn" onClick={() => navigate("/admin/personnel")}>
+        <button
+          className="back-btn"
+          onClick={() => navigate("/admin/personnel")}
+        >
           Back to List
         </button>
-        <button className="edit-btn" onClick={() => navigate(`/admin/personnel/${id}/edit`)}>
+        <button
+          className="edit-btn"
+          onClick={() => navigate(`/admin/personnel/${id}/edit`)}
+        >
           Edit Record
         </button>
         <button className="delete-btn" onClick={handleDelete}>
