@@ -3,15 +3,9 @@ import { useEffect, useRef } from "react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 
-import Header from "./results/Header";
-import PersonalInfo from "./results/PersonalInfo";
-import StatusGroups from "./results/StatusGroups";
-import ActionButtons from "./results/ActionButtons";
-import OverallRecommendation from "./results/OverallRecommendation";
-
 import "../styles/Results.css";
 
-export default function Results() {
+export default function ResultButtons() {
   const location = useLocation();
   const navigate = useNavigate();
   const resultsRef = useRef(null);
@@ -130,19 +124,6 @@ export default function Results() {
   };
 
   return (
-    <>
-      <div className="results" ref={resultsRef}>
-        <Header />
-        <PersonalInfo state={state} />
-        <StatusGroups state={state} />
-        <OverallRecommendation state={state} />
-      </div>
-
-      <ActionButtons
-        onDownload={downloadPDF}
-        onHome={goToHome}
-        sendMail={sendEmail}
-      />
-    </>
+    
   );
 }

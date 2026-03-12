@@ -1,16 +1,20 @@
+# backend/app/routes/fitness.py
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 from typing import List
 
 from app.schemas import InputSchema, PFTUpdate
-from app.services.naf_pft import compute_naf_pft
 from app.services.database import get_db
 from app.services.models import PFTResult
 
 router = APIRouter(prefix="/api", tags=["PFT Results"])
 
 
+# ==============================
+# GET ALL RESULTS
+# ==============================
 @router.get("/pft-results", response_model=List[dict])
 async def get_all_pft_results(db: Session = Depends(get_db)):
     try:
@@ -30,31 +34,42 @@ async def get_all_pft_results(db: Session = Depends(get_db)):
                 "age": r.age,
                 "sex": r.sex,
                 "height": r.height,
+
                 "weight_current": r.weight_current,
                 "bmi_current": r.bmi_current,
                 "bmi_status": r.bmi_status,
+
                 "cardio_cage": r.cardio_cage,
-                "step_up": r.step_up,
-                "push_up": r.push_up,
-                "sit_up": r.sit_up,
-                "chin_up": r.chin_up,
-                "sit_reach": r.sit_reach,
+
+                "step_up_value": r.step_up_value,
+                "push_up_value": r.push_up_value,
+                "sit_up_value": r.sit_up_value,
+                "chin_up_value": r.chin_up_value,
+                "sit_reach_value": r.sit_reach_value,
+
                 "aggregate": r.aggregate,
                 "grade": r.grade,
+
                 "prescription_duration": r.prescription_duration,
                 "prescription_days": r.prescription_days,
                 "recommended_activity": r.recommended_activity,
+
                 "created_at": r.created_at.isoformat() if r.created_at else None,
                 "notes": r.notes,
             }
             for r in records
         ]
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# ==============================
+# GET RESULT BY ID
+# ==============================
 @router.get("/pft-results/{result_id}", response_model=dict)
 async def get_pft_result_by_id(result_id: int, db: Session = Depends(get_db)):
+
     stmt = select(PFTResult).where(PFTResult.id == result_id)
     result = db.execute(stmt)
     record = result.scalars().first()
@@ -76,32 +91,43 @@ async def get_pft_result_by_id(result_id: int, db: Session = Depends(get_db)):
         "age": record.age,
         "sex": record.sex,
         "height": record.height,
+
         "weight_current": record.weight_current,
         "bmi_current": record.bmi_current,
         "bmi_status": record.bmi_status,
+
         "cardio_cage": record.cardio_cage,
-        "step_up": record.step_up,
-        "push_up": record.push_up,
-        "sit_up": record.sit_up,
-        "chin_up": record.chin_up,
-        "sit_reach": record.sit_reach,
+
+        "step_up_value": record.step_up_value,
+        "push_up_value": record.push_up_value,
+        "sit_up_value": record.sit_up_value,
+        "chin_up_value": record.chin_up_value,
+        "sit_reach_value": record.sit_reach_value,
+
         "aggregate": record.aggregate,
         "grade": record.grade,
+
         "prescription_duration": record.prescription_duration,
         "prescription_days": record.prescription_days,
         "recommended_activity": record.recommended_activity,
+
         "created_at": record.created_at.isoformat() if record.created_at else None,
         "notes": record.notes,
     }
 
 
+# ==============================
+# GET RESULTS BY SERVICE NUMBER
+# ==============================
 @router.get("/pft-results/svc/{svc_no}", response_model=List[dict])
 async def get_pft_results_by_svc_no(svc_no: str, db: Session = Depends(get_db)):
+
     stmt = (
         select(PFTResult)
         .where(PFTResult.svc_no == svc_no)
         .order_by(PFTResult.created_at.desc())
     )
+
     result = db.execute(stmt)
     records = result.scalars().all()
 
@@ -120,7 +146,7 @@ async def get_pft_results_by_svc_no(svc_no: str, db: Session = Depends(get_db)):
             "unit": r.unit,
             "age": r.age,
             "sex": r.sex,
-            "aggregate": float(r.aggregate) if r.aggregate is not None else None,
+            "aggregate": float(r.aggregate) if r.aggregate else None,
             "grade": r.grade,
             "created_at": r.created_at.isoformat() if r.created_at else None,
         }
@@ -128,10 +154,16 @@ async def get_pft_results_by_svc_no(svc_no: str, db: Session = Depends(get_db)):
     ]
 
 
+# ==============================
+# UPDATE RESULT
+# ==============================
 @router.put("/pft-results/{result_id}", response_model=dict)
 async def update_pft_result(
-    result_id: int, update_data: PFTUpdate, db: Session = Depends(get_db)
+    result_id: int,
+    update_data: PFTUpdate,
+    db: Session = Depends(get_db)
 ):
+
     stmt = select(PFTResult).where(PFTResult.id == result_id)
     result = db.execute(stmt)
     record = result.scalars().first()
@@ -140,6 +172,7 @@ async def update_pft_result(
         raise HTTPException(status_code=404, detail="PFT result not found")
 
     update_dict = update_data.model_dump(exclude_unset=True)
+
     for key, value in update_dict.items():
         setattr(record, key, value)
 
@@ -152,34 +185,27 @@ async def update_pft_result(
         "svc_no": record.svc_no,
         "full_name": record.full_name,
         "rank": record.rank,
-        "unit": record.unit,
-        "appointment": record.appointment,
-        "age": record.age,
-        "sex": record.sex,
-        "height": record.height,
-        "weight_current": record.weight_current,
-        "bmi_current": record.bmi_current,
-        "bmi_status": record.bmi_status,
-        "cardio_cage": record.cardio_cage,
-        "step_up": record.step_up,
-        "push_up": record.push_up,
-        "sit_up": record.sit_up,
-        "chin_up": record.chin_up,
-        "sit_reach": record.sit_reach,
+
+        "step_up_value": record.step_up_value,
+        "push_up_value": record.push_up_value,
+        "sit_up_value": record.sit_up_value,
+        "chin_up_value": record.chin_up_value,
+        "sit_reach_value": record.sit_reach_value,
+
         "aggregate": record.aggregate,
         "grade": record.grade,
-        "prescription_duration": record.prescription_duration,
-        "prescription_days": record.prescription_days,
-        "recommended_activity": record.recommended_activity,
-        "created_at": record.created_at.isoformat() if record.created_at else None,
-        "notes": record.notes,
+
         "updated_fields": list(update_dict.keys()),
         "message": "PFT result updated successfully",
     }
 
 
+# ==============================
+# DELETE RESULT
+# ==============================
 @router.delete("/pft-results/{result_id}")
 async def delete_pft_result(result_id: int, db: Session = Depends(get_db)):
+
     stmt = select(PFTResult).where(PFTResult.id == result_id)
     record = db.execute(stmt).scalars().first()
 

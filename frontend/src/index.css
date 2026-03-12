@@ -1,0 +1,104 @@
+/* Admin Layout overrides */
+.admin-layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* Sidebar styling */
+.sidebar {
+  width: 220px;
+  background-color: #343a40; /* Bootstrap dark */
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+}
+
+.sidebar h2 {
+  font-size: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.sidebar a {
+  color: #fff;
+  text-decoration: none;
+  margin-bottom: 0.5rem;
+  padding: 0.5rem;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.sidebar a:hover {
+  background-color: #495057;
+}
+
+/* Main content styling */
+.admin-main {
+  flex: 1;
+  padding: 2rem;
+}
+
+/* Dashboard Cards */
+.dashboard-card {
+  flex: 1;
+  min-width: 200px;
+  padding: 1rem;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+/* Results table */
+.table-responsive {
+  overflow-x: auto;
+}
+
+.results-table th,
+.results-table td {
+  vertical-align: middle !important;
+}
+
+/* Charts container */
+.charts-container {
+  margin-top: 2rem;
+}
+
+.charts-container .chart {
+  margin-bottom: 2rem;
+}
+
+/* Result modal */
+.modal-label {
+  font-weight: bold;
+  margin-top: 0.5rem;
+}
+
+.modal-input {
+  margin-bottom: 1rem;
+}
+
+/* Card for ResultDetails */
+.card {
+  background-color: #fff;
+  border-radius: 6px;
+  padding: 1rem;
+  box-shadow: 0 0 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .dashboard-card {
+    min-width: 100%;
+  }
+
+  .sidebar {
+    width: 100%;
+    flex-direction: row;
+    overflow-x: auto;
+  }
+
+  .sidebar a {
+    margin-right: 0.5rem;
+  }
+}
