@@ -52,7 +52,6 @@ class UserLogin(BaseModel):
     svc_no: str
     password: str
     rank: str
-    password: str
 
 
 # USER RESPONSE SCHEMA
