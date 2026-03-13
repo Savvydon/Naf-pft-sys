@@ -1,0 +1,144 @@
+.superadmin-page {
+  padding: 30px;
+  font-family: Arial, Helvetica, sans-serif;
+  background: #f4f6f9;
+  min-height: 100vh;
+}
+
+/* HEADER */
+
+.superadmin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+}
+
+.superadmin-header h1 {
+  font-size: 26px;
+  color: #222;
+}
+
+/* CARDS */
+
+.superadmin-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
+}
+
+.superadmin-card {
+  background: white;
+  border-radius: 8px;
+  padding: 25px;
+  text-align: center;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+  transition: 0.3s;
+}
+
+.superadmin-card:hover {
+  transform: translateY(-4px);
+}
+
+.superadmin-card h2 {
+  margin-bottom: 10px;
+  font-size: 18px;
+}
+
+.superadmin-card a {
+  text-decoration: none;
+  color: white;
+  background: #0d6efd;
+  padding: 8px 15px;
+  border-radius: 5px;
+  display: inline-block;
+}
+
+/* TABLE */
+
+.superadmin-table-container {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  overflow-x: auto;
+}
+
+.superadmin-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.superadmin-table th {
+  background: #0d6efd;
+  color: white;
+  padding: 12px;
+  text-align: left;
+}
+
+.superadmin-table td {
+  padding: 12px;
+  border-bottom: 1px solid #ddd;
+}
+
+.superadmin-table tr:hover {
+  background: #f1f1f1;
+}
+
+/* LOGIN PAGE */
+
+.superadmin-login-container {
+  max-width: 400px;
+  margin: 80px auto;
+  background: white;
+  padding: 30px;
+  border-radius: 8px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+}
+
+.superadmin-login-container h2 {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.superadmin-login-container input {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 15px;
+}
+
+.superadmin-login-container button {
+  width: 100%;
+  padding: 12px;
+  background: #0d6efd;
+  color: white;
+  border: none;
+  border-radius: 5px;
+}
+
+/* RESPONSIVE */
+
+@media (max-width: 768px) {
+  .superadmin-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .superadmin-header h1 {
+    margin-bottom: 10px;
+  }
+
+  .superadmin-cards {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .superadmin-page {
+    padding: 15px;
+  }
+
+  .superadmin-table th,
+  .superadmin-table td {
+    font-size: 14px;
+  }
+}

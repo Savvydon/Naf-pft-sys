@@ -1,3 +1,4 @@
+// components/PhysicalFitness.jsx
 import { usePhysicalFitness } from "./usePhysicalFitness";
 import { PhysicalFitnessForm } from "./PhysicalFitnessForm";
 import airForce from "../assets/airforce.png";
@@ -15,12 +16,14 @@ export default function PhysicalFitness() {
             NIGERIAN AIR FORCE ANNUAL PHYSICAL FITNESS TEST INTERPRETATION FORM
           </h1>
         </div>
+
         <PhysicalFitnessForm
           formData={formData}
           handleChange={handleChange}
           handleSubmit={handleSubmit}
           ranks={ranks}
         />
+
         <p style={{ textAlign: "center" }}>
           &copy; {new Date().getFullYear()} Nigeria Air Force – Official Use
           Only

@@ -1,5 +1,5 @@
 // components/PhysicalFitnessForm.jsx
-import { useAuth } from "./AuthContext";
+import { useAuth } from "../AuthContext";
 
 export function PhysicalFitnessForm({
   formData,
@@ -7,10 +7,19 @@ export function PhysicalFitnessForm({
   handleSubmit,
   ranks,
 }) {
-  const { currentUser } = useAuth();
+  const { currentUser, authLoading } = useAuth();
+
+  if (authLoading) {
+    return (
+      <div style={{ textAlign: "center", marginTop: "40px" }}>
+        Loading evaluator information...
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit} className="form-grid">
+      {/* ------------------ FORM FIELDS ------------------ */}
       <div>
         <label>Year:</label>
         <input
@@ -128,7 +137,7 @@ export function PhysicalFitnessForm({
         <input
           name="email"
           type="email"
-          placeholder="enter your email address"
+          placeholder="Enter email address"
           value={formData.email}
           onChange={handleChange}
           required
@@ -229,20 +238,20 @@ export function PhysicalFitnessForm({
         <input
           name="sitReach"
           type="number"
-          placeholder="Sit and Reach(cm)"
+          placeholder="Sit and Reach (cm)"
           value={formData.sitReach}
           onChange={handleChange}
           required
         />
       </div>
 
-      {/* ── AUTO-FILLED & READ-ONLY EVALUATOR FIELDS ── */}
+      {/* ---------------- Evaluator Fields ---------------- */}
       <div>
         <label>Evaluator Name:</label>
         <input
           name="evaluatorName"
           type="text"
-          value={currentUser?.full_name || "Loading..."}
+          value={currentUser?.full_name || ""}
           readOnly
           disabled
           style={{
@@ -258,7 +267,7 @@ export function PhysicalFitnessForm({
         <input
           name="evaluatorRank"
           type="text"
-          value={currentUser?.rank || "Loading..."}
+          value={currentUser?.rank || ""}
           readOnly
           disabled
           style={{

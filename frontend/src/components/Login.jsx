@@ -1,14 +1,39 @@
-// components/Login.jsx
 import { useState } from "react";
-import { useAuth } from "./AuthContext";
+import { useAuth } from "../AuthContext";
+import { useNavigate } from "react-router-dom";
 
 export default function Login() {
   const [svc_no, setSvcNo] = useState("");
   const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [rank, setRank] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
   const [isBusy, setIsBusy] = useState(false);
 
   const { login } = useAuth();
+  const navigate = useNavigate();
+
+  const ranks = [
+    "Air Man",
+    "Air Woman",
+    "Lance Corporal",
+    "Corporal",
+    "Sergeant",
+    "Flight Sergeant",
+    "Warrant Officer",
+    "Master Warrant Officer",
+    "Air Warrant Officer",
+    "Flying Officer",
+    "Flight Lieutenant",
+    "Squadron Leader",
+    "Wing Commander",
+    "Group Captain",
+    "Air Commodore",
+    "Air Vice Marshal",
+    "Vice Marshal",
+    "Air Chief Marshal",
+    "Marshal of the Air Force",
+  ];
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -24,6 +49,8 @@ export default function Login() {
           body: JSON.stringify({
             svc_no: svc_no.trim().toUpperCase(),
             password,
+            full_name: fullName.trim(),
+            rank,
           }),
         },
       );
@@ -31,11 +58,11 @@ export default function Login() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.detail || "Login failed - check credentials");
+        throw new Error(data.detail || "Login/Registration failed");
       }
 
       login(data.access_token);
-      window.location.reload(); // reload to show form with user info
+      navigate("/"); // go to evaluator form
     } catch (err) {
       setErrorMsg(err.message);
     } finally {
@@ -46,52 +73,71 @@ export default function Login() {
   return (
     <div
       style={{
-        maxWidth: "420px",
-        margin: "80px auto",
+        maxWidth: "480px",
+        margin: "120px auto",
         padding: "24px",
         border: "1px solid #ddd",
         borderRadius: "8px",
       }}
     >
       <h2 style={{ textAlign: "center", marginBottom: "28px" }}>
-        Evaluator Login
+        Evaluator Login / Registration
       </h2>
 
       <form onSubmit={handleLogin}>
-        <div style={{ marginBottom: "20px" }}>
-          <label
-            style={{ display: "block", marginBottom: "6px", fontWeight: 500 }}
-          >
-            Service Number
-          </label>
+        <div style={{ marginBottom: "16px" }}>
+          <label>Service Number</label>
           <input
             type="text"
             value={svc_no}
             onChange={(e) => setSvcNo(e.target.value)}
             placeholder="NAF26/10102"
             required
-            style={{ width: "100%", padding: "10px", boxSizing: "border-box" }}
+            style={{ width: "100%", padding: "10px" }}
           />
         </div>
 
-        <div style={{ marginBottom: "24px" }}>
-          <label
-            style={{ display: "block", marginBottom: "6px", fontWeight: 500 }}
-          >
-            Password
-          </label>
+        <div style={{ marginBottom: "16px" }}>
+          <label>Password</label>
           <input
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            style={{ width: "100%", padding: "10px", boxSizing: "border-box" }}
+            style={{ width: "100%", padding: "10px" }}
           />
         </div>
 
-        {errorMsg && (
-          <p style={{ color: "red", marginBottom: "16px" }}>{errorMsg}</p>
-        )}
+        <div style={{ marginBottom: "16px" }}>
+          <label>Full Name</label>
+          <input
+            type="text"
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+            placeholder="John Doe"
+            required
+            style={{ width: "100%", padding: "10px" }}
+          />
+        </div>
+
+        <div style={{ marginBottom: "16px" }}>
+          <label>Rank</label>
+          <select
+            value={rank}
+            onChange={(e) => setRank(e.target.value)}
+            required
+            style={{ width: "100%", padding: "10px" }}
+          >
+            <option value="">Select Rank</option>
+            {ranks.map((r) => (
+              <option key={r} value={r}>
+                {r}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {errorMsg && <p style={{ color: "red" }}>{errorMsg}</p>}
 
         <button
           type="submit"
@@ -100,14 +146,13 @@ export default function Login() {
             width: "100%",
             padding: "12px",
             background: isBusy ? "#aaa" : "#0d6efd",
-            color: "white",
+            color: "#fff",
             border: "none",
             borderRadius: "6px",
-            fontSize: "16px",
             cursor: isBusy ? "not-allowed" : "pointer",
           }}
         >
-          {isBusy ? "Signing in..." : "Login"}
+          {isBusy ? "Processing..." : "Login / Register"}
         </button>
       </form>
     </div>

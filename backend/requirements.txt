@@ -9,3 +9,6 @@ python-multipart==0.0.7
 aiosmtplib
 python-jose[cryptography]
 passlib[bcrypt]
+pytest
+email-validator
+alembic
