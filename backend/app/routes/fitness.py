@@ -11,20 +11,17 @@ from app.services.auth import get_current_user, require_admin
 router = APIRouter(prefix="/api", tags=["PFT Results"])
 
 
-# ── GET ALL RESULTS ─────────────────────────────────────────────
+# ─────────────────────────────────────────────
+# GET ALL RESULTS (LOGIN REQUIRED)
+# ─────────────────────────────────────────────
 @router.get("/pft-results", response_model=List[dict])
 async def get_all_pft_results(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)  # ← login required
+    current_user: User = Depends(get_current_user)
 ):
-    """
-    Get all PFT results (all users can view)
-    Admins get full data, evaluators may get limited fields if needed.
-    """
     try:
         stmt = select(PFTResult).order_by(PFTResult.created_at.desc())
-        result = db.execute(stmt)
-        records = result.scalars().all()
+        records = db.execute(stmt).scalars().all()
 
         return [
             {
@@ -109,14 +106,18 @@ async def get_all_pft_results(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# ── GET RESULT BY ID ───────────────────────────────────────────
+# ─────────────────────────────────────────────
+# GET RESULT BY ID
+# ─────────────────────────────────────────────
 @router.get("/pft-results/{result_id}", response_model=dict)
 async def get_pft_result_by_id(
     result_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    record = db.query(PFTResult).filter(PFTResult.id == result_id).first()
+
+    stmt = select(PFTResult).where(PFTResult.id == result_id)
+    record = db.execute(stmt).scalars().first()
 
     if not record:
         raise HTTPException(
@@ -127,14 +128,23 @@ async def get_pft_result_by_id(
     return record.__dict__
 
 
-# ── GET RESULTS BY SERVICE NUMBER ──────────────────────────────
+# ─────────────────────────────────────────────
+# GET RESULTS BY SERVICE NUMBER
+# ─────────────────────────────────────────────
 @router.get("/pft-results/svc/{svc_no}", response_model=List[dict])
 async def get_pft_results_by_svc_no(
     svc_no: str,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    records = db.query(PFTResult).filter(PFTResult.svc_no == svc_no).order_by(PFTResult.created_at.desc()).all()
+
+    stmt = (
+        select(PFTResult)
+        .where(PFTResult.svc_no == svc_no)
+        .order_by(PFTResult.created_at.desc())
+    )
+
+    records = db.execute(stmt).scalars().all()
 
     if not records:
         raise HTTPException(
@@ -161,7 +171,9 @@ async def get_pft_results_by_svc_no(
     ]
 
 
-# ── UPDATE RESULT (ADMIN ONLY) ────────────────────────────────
+# ─────────────────────────────────────────────
+# UPDATE RESULT (ADMIN ONLY)
+# ─────────────────────────────────────────────
 @router.put("/pft-results/{result_id}", response_model=dict)
 async def update_pft_result(
     result_id: int,
@@ -169,7 +181,9 @@ async def update_pft_result(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin)
 ):
-    record = db.query(PFTResult).filter(PFTResult.id == result_id).first()
+
+    stmt = select(PFTResult).where(PFTResult.id == result_id)
+    record = db.execute(stmt).scalars().first()
 
     if not record:
         raise HTTPException(status_code=404, detail="PFT result not found")
@@ -184,19 +198,27 @@ async def update_pft_result(
 
     return {
         "id": record.id,
+        "year": record.year,
+        "svc_no": record.svc_no,
+        "full_name": record.full_name,
+        "rank": record.rank,
         "updated_fields": list(update_dict.keys()),
         "message": "PFT result updated successfully",
     }
 
 
-# ── DELETE RESULT (ADMIN ONLY) ────────────────────────────────
+# ─────────────────────────────────────────────
+# DELETE RESULT (ADMIN ONLY)
+# ─────────────────────────────────────────────
 @router.delete("/pft-results/{result_id}")
 async def delete_pft_result(
     result_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin)
 ):
-    record = db.query(PFTResult).filter(PFTResult.id == result_id).first()
+
+    stmt = select(PFTResult).where(PFTResult.id == result_id)
+    record = db.execute(stmt).scalars().first()
 
     if not record:
         raise HTTPException(status_code=404, detail="PFT result not found")
