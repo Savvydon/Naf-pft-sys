@@ -1,6 +1,10 @@
+# backend/app/schemas.py
+
 from pydantic import BaseModel
 from typing import Optional
 
+
+# ────────────────────────────────────────────
 # PFT INPUT SCHEMA (Evaluator Form Submission)
 class InputSchema(BaseModel):
 
@@ -25,6 +29,7 @@ class InputSchema(BaseModel):
 
     # evaluator_name and evaluator_rank intentionally excluded
     # backend automatically attaches them from authenticated user
+
 
 # ADMIN UPDATE SCHEMA
 # (All fields optional so admin can modify any part)
@@ -52,22 +57,26 @@ class PFTUpdate(BaseModel):
     evaluator_rank: Optional[str] = None
     notes: Optional[str] = None
 
+
 # AUTHENTICATION SCHEMAS
 class Token(BaseModel):
 
     access_token: str
     token_type: str = "bearer"
 
+
 class TokenData(BaseModel):
 
     svc_no: Optional[str] = None
 
+
 # LOGIN SCHEMA
 class UserLogin(BaseModel):
-
     svc_no: str
-    password: str
+    full_name: str
     rank: str
+    password: str
+
 
 # USER RESPONSE SCHEMA
 class UserOut(BaseModel):

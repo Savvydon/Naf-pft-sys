@@ -72,10 +72,10 @@ class TokenData(BaseModel):
 
 # LOGIN SCHEMA
 class UserLogin(BaseModel):
-
     svc_no: str
-    password: str
+    full_name: str
     rank: str
+    password: str
 
 
 # USER RESPONSE SCHEMA
