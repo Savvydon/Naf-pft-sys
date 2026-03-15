@@ -1,18 +1,17 @@
 import os
 from datetime import datetime, timedelta, timezone
 from typing import Optional
-
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
-
 from .database import get_db
 from .models import User
 from ..schemas import TokenData
 
-# ── SECRET & JWT CONFIG ─────────────────────────────
+
+# SECRET & JWT CONFIG
 
 SECRET_KEY = os.getenv("SECRET_KEY")
 
@@ -27,26 +26,33 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 
-# ── PASSWORD HELPERS ────────────────────────────────
+# PASSWORD HELPERS
+
+def _truncate_password(password: str) -> str:
+    """
+    bcrypt only supports passwords up to 72 bytes.
+    This safely truncates the password to avoid bcrypt errors.
+    """
+    return password.encode("utf-8")[:72].decode("utf-8", "ignore")
+
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
-    bcrypt only supports passwords up to 72 bytes.
-    We truncate safely before verifying.
+    Verify a password against its hashed value.
     """
-    truncated = plain_password.encode("utf-8")[:72]
-    return pwd_context.verify(truncated, hashed_password)
+    safe_password = _truncate_password(plain_password)
+    return pwd_context.verify(safe_password, hashed_password)
 
 
 def get_password_hash(password: str) -> str:
     """
     Hash password safely with bcrypt.
     """
-    truncated = password.encode("utf-8")[:72]
-    return pwd_context.hash(truncated)
+    safe_password = _truncate_password(password)
+    return pwd_context.hash(safe_password)
 
 
-# ── JWT TOKEN CREATION ─────────────────────────────
+# JWT TOKEN CREATION
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
 
@@ -66,7 +72,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     return encoded_jwt
 
 
-# ── GET CURRENT USER ───────────────────────────────
+# GET CURRENT USER
 
 async def get_current_user(
     token: str = Depends(oauth2_scheme),
@@ -101,7 +107,7 @@ async def get_current_user(
     return user
 
 
-# ── ROLE PROTECTION ─────────────────────────────────
+# ROLE PROTECTION
 
 async def require_evaluator(
     current_user: User = Depends(get_current_user)
@@ -129,7 +135,7 @@ async def require_admin(
     return current_user
 
 
-# ── SUPER ADMIN ACCESS REQUIREMENT ──────────────────
+# SUPER ADMIN ACCESS REQUIREMENT
 
 async def require_super_admin(
     current_user: User = Depends(get_current_user)
