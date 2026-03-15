@@ -12,7 +12,7 @@ export function AuthProvider({ children }) {
     const storedToken = localStorage.getItem("pft_token");
 
     if (storedToken) {
-      fetch("https://naf-pft-sys.onrender.com/auth/me", {
+      fetch("https://naf-pft-sys-1.onrender.com/auth/me", {
         headers: {
           Authorization: `Bearer ${storedToken}`,
         },
