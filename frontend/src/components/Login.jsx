@@ -72,7 +72,7 @@ export default function Login() {
       }}
     >
       <h2 style={{ textAlign: "center", marginBottom: "28px" }}>
-        Evaluator Login / Registration
+        Sports and Physical Education Evaluator Login
       </h2>
 
       <form onSubmit={handleLogin}>
