@@ -13,7 +13,9 @@ from .models import User
 from ..schemas import TokenData
 
 # ── SECRET & JWT CONFIG ─────────────────────────────
+
 SECRET_KEY = os.getenv("SECRET_KEY")
+
 if not SECRET_KEY:
     raise ValueError("SECRET_KEY environment variable is not set")
 
@@ -26,15 +28,26 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 
 # ── PASSWORD HELPERS ────────────────────────────────
+
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    return pwd_context.verify(plain_password, hashed_password)
+    """
+    bcrypt only supports passwords up to 72 bytes.
+    We truncate safely before verifying.
+    """
+    truncated = plain_password.encode("utf-8")[:72]
+    return pwd_context.verify(truncated, hashed_password)
 
 
 def get_password_hash(password: str) -> str:
-    return pwd_context.hash(password)
+    """
+    Hash password safely with bcrypt.
+    """
+    truncated = password.encode("utf-8")[:72]
+    return pwd_context.hash(truncated)
 
 
-# ── JWT HELPERS ─────────────────────────────────────
+# ── JWT TOKEN CREATION ─────────────────────────────
+
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
 
     to_encode = data.copy()
@@ -48,10 +61,13 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
 
     to_encode.update({"exp": expire})
 
-    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+    return encoded_jwt
 
 
-# ── CURRENT USER DEPENDENCY ────────────────────────
+# ── GET CURRENT USER ───────────────────────────────
+
 async def get_current_user(
     token: str = Depends(oauth2_scheme),
     db: Session = Depends(get_db)
@@ -66,6 +82,7 @@ async def get_current_user(
     try:
 
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+
         svc_no: str = payload.get("sub")
 
         if svc_no is None:
@@ -111,13 +128,17 @@ async def require_admin(
 
     return current_user
 
-# ── SUPER ADMIN ACCESS REQUIREMENT
+
+# ── SUPER ADMIN ACCESS REQUIREMENT ──────────────────
+
 async def require_super_admin(
     current_user: User = Depends(get_current_user)
 ) -> User:
+
     if current_user.role != "super_admin":
         raise HTTPException(
             status_code=403,
             detail="Super admin access required"
         )
+
     return current_user

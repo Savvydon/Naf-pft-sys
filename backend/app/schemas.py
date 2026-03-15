@@ -72,7 +72,6 @@ class UserRegister(BaseModel):
     svc_no: str
     full_name: str
     rank: str
-
     password: str
 
     # email optional

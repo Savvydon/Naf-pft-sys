@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+
 from app.schemas import UserLogin, Token, UserOut, UserRegister
 from app.services.auth import (
     create_access_token,
@@ -13,7 +14,8 @@ from app.services.models import User
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
-# REGISTER NEW USER
+# ── REGISTER USER ───────────────────────────────────
+
 @router.post("/register")
 def register_user(
     data: UserRegister,
@@ -34,8 +36,8 @@ def register_user(
 
     new_user = User(
         svc_no=svc_no,
-        full_name=data.full_name,
-        rank=data.rank,
+        full_name=data.full_name.strip(),
+        rank=data.rank.strip(),
         email=data.email,
         hashed_password=hashed_password,
         role="evaluator"
@@ -51,7 +53,8 @@ def register_user(
     }
 
 
-# LOGIN
+# ── LOGIN ───────────────────────────────────────────
+
 @router.post("/login", response_model=Token)
 def login_for_access_token(
     data: UserLogin,
@@ -68,21 +71,18 @@ def login_for_access_token(
             detail="Service number not registered"
         )
 
-    # Verify full name
     if user.full_name.lower().strip() != data.full_name.lower().strip():
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Name does not match service number"
         )
 
-    # Verify rank
     if user.rank.lower().strip() != data.rank.lower().strip():
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Rank does not match service number"
         )
 
-    # Verify password
     if not verify_password(data.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -100,9 +100,12 @@ def login_for_access_token(
     }
 
 
-# GET CURRENT USER
+# ── CURRENT USER ────────────────────────────────────
+
 @router.get("/me", response_model=UserOut)
-def read_users_me(current_user: User = Depends(get_current_user)):
+def read_users_me(
+    current_user: User = Depends(get_current_user)
+):
 
     return {
         "svc_no": current_user.svc_no,

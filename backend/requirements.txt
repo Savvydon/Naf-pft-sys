@@ -1,7 +1,7 @@
 fastapi
 uvicorn[standard]
 sqlalchemy
-psycopg2-binary>=2.9.9     # ← add this (most reliable & easiest on Render)
+psycopg2-binary>=2.9.9 
 pydantic>=2.0
 python-dotenv
 reportlab

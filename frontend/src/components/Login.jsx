@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "../AuthContext";
 import { useNavigate } from "react-router-dom";
+import { loginOrRegister } from "../services/api";
 
 export default function Login() {
   const [svc_no, setSvcNo] = useState("");
@@ -41,30 +42,20 @@ export default function Login() {
     setIsBusy(true);
 
     try {
-      const response = await fetch(
-        "https://naf-pft-sys.onrender.com/auth/login",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            svc_no: svc_no.trim().toUpperCase(),
-            password,
-            full_name: fullName.trim(),
-            rank,
-          }),
-        },
-      );
+      const data = await loginOrRegister({
+        svc_no: svc_no.trim().toUpperCase(),
+        password,
+        full_name: fullName.trim(),
+        rank,
+      });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.detail || "Login/Registration failed");
-      }
-
+      // Save token
       login(data.access_token);
-      navigate("/"); // go to evaluator form
+
+      // reload to allow AuthContext to fetch user
+      window.location.href = "/";
     } catch (err) {
-      setErrorMsg(err.message);
+      setErrorMsg(err.message || "Authentication failed");
     } finally {
       setIsBusy(false);
     }
@@ -137,7 +128,9 @@ export default function Login() {
           </select>
         </div>
 
-        {errorMsg && <p style={{ color: "red" }}>{errorMsg}</p>}
+        {errorMsg && (
+          <p style={{ color: "red", marginBottom: "10px" }}>{errorMsg}</p>
+        )}
 
         <button
           type="submit"
