@@ -1,9 +1,7 @@
 const API_BASE = "https://naf-pft-sys-1.onrender.com";
 
-// Helper to get token
 const getToken = () => localStorage.getItem("pft_token");
 
-// Helper for headers
 const getHeaders = (auth = false) => {
   const headers = {
     "Content-Type": "application/json",
@@ -14,7 +12,6 @@ const getHeaders = (auth = false) => {
   return headers;
 };
 
-// Helper for error handling
 async function handleError(res) {
   let data = {};
   try {
@@ -25,9 +22,9 @@ async function handleError(res) {
   throw new Error(message);
 }
 
-// ==================== AUTH (for Admin) ====================
-
 export async function loginAdmin(credentials) {
+  console.log("[DEBUG] Attempting admin login with:", credentials.svc_no);
+
   const response = await fetch(`${API_BASE}/auth/login`, {
     method: "POST",
     headers: getHeaders(),
@@ -37,26 +34,52 @@ export async function loginAdmin(credentials) {
   let data = {};
   try {
     data = await response.json();
-  } catch {}
+  } catch (e) {
+    console.log("[DEBUG] Failed to parse response:", e);
+  }
+
+  console.log("[DEBUG] Backend response:", {
+    status: response.status,
+    role: data.role,
+    roleType: typeof data.role,
+    full_name: data.full_name,
+    svc_no: data.svc_no,
+  });
 
   if (!response.ok) {
     throw new Error(data.detail || `Login failed (status ${response.status})`);
   }
 
-  // FIXED: Case-insensitive role check, allow both admin and super_admin
-  const userRole = (data.role || "").toLowerCase().trim();
+  // CRITICAL FIX: Handle role with extra care
+  let userRole = data.role;
 
+  // Convert to string if not already
+  if (typeof userRole !== "string") {
+    userRole = String(userRole);
+  }
+
+  // Trim and lowercase
+  userRole = userRole.trim().toLowerCase();
+
+  console.log("[DEBUG] Processed role:", userRole);
+  console.log("[DEBUG] Role check - is admin?", userRole === "admin");
+  console.log(
+    "[DEBUG] Role check - is super_admin?",
+    userRole === "super_admin",
+  );
+
+  // Allow admin or super_admin
   if (userRole !== "admin" && userRole !== "super_admin") {
+    console.log("[DEBUG] REJECTED: Role is not admin or super_admin");
     throw new Error(
       `This account is registered as "${data.role}". ` +
         `Only Admins can use this login portal.`,
     );
   }
 
+  console.log("[DEBUG] ACCEPTED: Admin login successful");
   return data;
 }
-
-// ==================== PFT RESULTS (Admin Only) ====================
 
 export async function getAllPersonnel() {
   const response = await fetch(`${API_BASE}/api/pft-results`, {

@@ -63,7 +63,9 @@ class Token(BaseModel):
 
     access_token: str
     token_type: str = "bearer"
-
+    role: str                   
+    full_name: str               
+    rank: str   
 
 class TokenData(BaseModel):
 
@@ -86,3 +88,5 @@ class UserOut(BaseModel):
     rank: str
     role: str
     email: Optional[str] = None
+
+                  
