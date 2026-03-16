@@ -1,3 +1,4 @@
+from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -8,6 +9,10 @@ from pydantic import BaseModel
 from typing import List, Optional
 
 router = APIRouter(prefix="/superadmin", tags=["superadmin"])
+
+# ---------- CONFIGURATION ----------
+SUPERADMIN_SVC_NO = "NAF09/23345"
+SUPERADMIN_PASSWORD = "Super-Admin2026!"
 
 # ---------- SCHEMAS ----------
 class UserCreate(BaseModel):
@@ -23,7 +28,7 @@ class UserOut(BaseModel):
     full_name: str
     rank: str
     role: str
-    created_at: Optional[str] = None
+    created_at: Optional[str] = None  # Keep as string
 
     class Config:
         from_attributes = True
@@ -35,39 +40,52 @@ class EvaluatorWithCount(BaseModel):
     rank: str
     evaluations_count: int
 
+# ---------- HELPER: Convert User to UserOut ----------
+def user_to_dict(user: User) -> dict:
+    """Convert User model to dict with string datetime"""
+    return {
+        "id": user.id,
+        "svc_no": user.svc_no,
+        "full_name": user.full_name,
+        "rank": user.rank,
+        "role": user.role,
+        "created_at": user.created_at.isoformat() if user.created_at else None
+    }
+
 # ---------- STATIC SUPER ADMIN LOGIN ----------
 @router.post("/login")
 def superadmin_login(credentials: dict, db: Session = Depends(get_db)):
     """
     Static login for super admin only.
-    Expected: {"svc_no": "NAF/ADMIN/SUPER", "password": "SuperAdmin2024!"}
+    Credentials: NAF09/22119 / Super-Admin-2026
     """
-    STATIC_SVC_NO = "NAF09/23345"
-    STATIC_PASSWORD = "Super-Admin2026!"
-    
     svc_no = credentials.get("svc_no", "").strip().upper()
     password = credentials.get("password", "")
     
-    if svc_no != STATIC_SVC_NO or password != STATIC_PASSWORD:
+    # Normalize input
+    svc_no = svc_no.replace("//", "/").strip()
+    
+    if svc_no != SUPERADMIN_SVC_NO.upper() or password != SUPERADMIN_PASSWORD:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid super admin credentials"
         )
     
     # Check if super admin exists in DB, if not create it
-    super_admin = db.query(User).filter(User.svc_no == STATIC_SVC_NO).first()
+    super_admin = db.query(User).filter(User.svc_no == SUPERADMIN_SVC_NO.upper()).first()
     
     if not super_admin:
         super_admin = User(
-            svc_no=STATIC_SVC_NO,
+            svc_no=SUPERADMIN_SVC_NO.upper(),
             full_name="Super Administrator",
-            rank="System Admin",
-            hashed_password=get_password_hash(STATIC_PASSWORD),
+            rank="System Administrator",
+            hashed_password=get_password_hash(SUPERADMIN_PASSWORD),
             role="super_admin"
         )
         db.add(super_admin)
         db.commit()
         db.refresh(super_admin)
+        print(f"[SUPER ADMIN] Created new super admin: {SUPERADMIN_SVC_NO}")
     
     from app.services.auth import create_access_token
     access_token = create_access_token(data={"sub": super_admin.svc_no})
@@ -90,13 +108,19 @@ def create_evaluator(
     if user_data.role != "evaluator":
         raise HTTPException(400, "Role must be 'evaluator' for this endpoint")
     
+    # Normalize service number
+    svc_no = user_data.svc_no.upper().strip()
+    
     # Check if service number exists
-    existing = db.query(User).filter(User.svc_no == user_data.svc_no.upper()).first()
+    existing = db.query(User).filter(User.svc_no == svc_no).first()
     if existing:
-        raise HTTPException(409, "Service number already registered")
+        raise HTTPException(
+            409, 
+            f"Service number '{svc_no}' already registered as {existing.role}"
+        )
     
     new_user = User(
-        svc_no=user_data.svc_no.upper(),
+        svc_no=svc_no,
         full_name=user_data.full_name.strip(),
         rank=user_data.rank.strip(),
         hashed_password=get_password_hash(user_data.password),
@@ -105,7 +129,9 @@ def create_evaluator(
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
-    return new_user
+    
+    # Manual conversion - guaranteed to work
+    return user_to_dict(new_user)
 
 # ---------- CREATE ADMIN ----------
 @router.post("/admins", response_model=UserOut)
@@ -117,12 +143,18 @@ def create_admin(
     if user_data.role != "admin":
         raise HTTPException(400, "Role must be 'admin' for this endpoint")
     
-    existing = db.query(User).filter(User.svc_no == user_data.svc_no.upper()).first()
+    # Normalize service number
+    svc_no = user_data.svc_no.upper().strip()
+    
+    existing = db.query(User).filter(User.svc_no == svc_no).first()
     if existing:
-        raise HTTPException(409, "Service number already registered")
+        raise HTTPException(
+            409, 
+            f"Service number '{svc_no}' already registered as {existing.role}"
+        )
     
     new_user = User(
-        svc_no=user_data.svc_no.upper(),
+        svc_no=svc_no,
         full_name=user_data.full_name.strip(),
         rank=user_data.rank.strip(),
         hashed_password=get_password_hash(user_data.password),
@@ -131,7 +163,9 @@ def create_admin(
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
-    return new_user
+    
+    # Manual conversion - guaranteed to work
+    return user_to_dict(new_user)
 
 # ---------- LIST EVALUATORS WITH EVALUATION COUNTS ----------
 @router.get("/evaluators", response_model=List[EvaluatorWithCount])
@@ -169,7 +203,8 @@ def get_admins(
     current_user: User = Depends(require_super_admin)
 ):
     admins = db.query(User).filter(User.role == "admin").all()
-    return admins
+    # Manual conversion for each admin
+    return [user_to_dict(admin) for admin in admins]
 
 # ---------- GET SINGLE EVALUATOR DETAILS ----------
 @router.get("/evaluators/{evaluator_id}")
@@ -193,13 +228,7 @@ def get_evaluator_details(
     ).order_by(PFTResult.created_at.desc()).all()
     
     return {
-        "evaluator": {
-            "id": evaluator.id,
-            "svc_no": evaluator.svc_no,
-            "full_name": evaluator.full_name,
-            "rank": evaluator.rank,
-            "created_at": evaluator.created_at.isoformat() if evaluator.created_at else None
-        },
+        "evaluator": user_to_dict(evaluator),  # Use helper
         "evaluations_count": len(evaluations),
         "evaluations": [
             {
@@ -229,13 +258,7 @@ def get_admin_details(
     if not admin:
         raise HTTPException(404, "Admin not found")
     
-    return {
-        "id": admin.id,
-        "svc_no": admin.svc_no,
-        "full_name": admin.full_name,
-        "rank": admin.rank,
-        "created_at": admin.created_at.isoformat() if admin.created_at else None
-    }
+    return user_to_dict(admin)  # Use helper
 
 # ---------- DELETE EVALUATOR ----------
 @router.delete("/evaluators/{evaluator_id}")
