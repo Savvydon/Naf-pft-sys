@@ -88,18 +88,19 @@ async def get_current_user(
 
     return user
 
-# ROLE PROTECTION - STRICT EVALUATOR ONLY
+# ROLE PROTECTION - ALL ROLES CAN EVALUATE
 async def require_evaluator(
     current_user: User = Depends(get_current_user)
 ) -> User:
     """
-    Strictly requires evaluator role only.
-    Admins and Super Admins CANNOT perform evaluations.
+    All authenticated users can perform evaluations.
+    Evaluators, Admins, and Super Admins all have evaluation access.
     """
-    if current_user.role != "evaluator":
+    # Allow all valid roles to evaluate
+    if current_user.role not in ["evaluator", "admin", "super_admin"]:
         raise HTTPException(
             status_code=403,
-            detail="Evaluator access required. Admins and Super Admins cannot perform evaluations."
+            detail="Valid user role required for evaluation"
         )
     return current_user
 
