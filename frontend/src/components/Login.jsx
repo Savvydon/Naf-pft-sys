@@ -48,17 +48,17 @@ export default function Login() {
         rank,
       });
 
-      // All roles can use this login - redirect based on role
+      // ALL roles can evaluate - save token and redirect based on role
       login(data.access_token);
 
       // Redirect based on role
       if (data.role === "super_admin") {
-        window.location.href = "/superadmin/dashboard";
+        navigate("/superadmin/dashboard");
       } else if (data.role === "admin") {
-        window.location.href = "/admin/dashboard";
+        navigate("/admin/dashboard");
       } else {
-        // Evaluator or any other role goes to evaluation form
-        window.location.href = "/";
+        // Evaluator goes to evaluation form
+        navigate("/");
       }
     } catch (err) {
       let message = err.message || "Authentication failed";
@@ -91,7 +91,7 @@ export default function Login() {
       }}
     >
       <h2 style={{ textAlign: "center", marginBottom: "28px" }}>
-        NAF PFT System Login
+        NAF PFT Evaluator Login
       </h2>
 
       <form onSubmit={handleLogin}>
@@ -179,14 +179,14 @@ export default function Login() {
         }}
       >
         <a href="/admin/login" style={{ color: "#0d6efd" }}>
-          Admin Portal
+          Admin Login
         </a>{" "}
         |
         <a
           href="/superadmin/login"
           style={{ color: "#0d6efd", marginLeft: "10px" }}
         >
-          Super Admin Portal
+          Super Admin Login
         </a>
       </p>
     </div>

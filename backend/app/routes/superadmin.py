@@ -11,8 +11,8 @@ from typing import List, Optional
 router = APIRouter(prefix="/superadmin", tags=["superadmin"])
 
 # ---------- CONFIGURATION ----------
-SUPERADMIN_SVC_NO = "NAF09/22119"
-SUPERADMIN_PASSWORD = "Super-Admin-2026"
+SUPERADMIN_SVC_NO = "NAF09/23345"
+SUPERADMIN_PASSWORD = "Super-Admin2026!"
 
 # ---------- SCHEMAS ----------
 class UserCreate(BaseModel):

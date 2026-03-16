@@ -15,12 +15,25 @@ export default function AdminLogin() {
   const navigate = useNavigate();
 
   const ranks = [
-    "Air Man", "Air Woman", "Lance Corporal", "Corporal", "Sergeant",
-    "Flight Sergeant", "Warrant Officer", "Master Warrant Officer",
-    "Air Warrant Officer", "Flying Officer", "Flight Lieutenant",
-    "Squadron Leader", "Wing Commander", "Group Captain",
-    "Air Commodore", "Air Vice Marshal", "Vice Marshal",
-    "Air Chief Marshal", "Marshal of the Air Force",
+    "Air Man",
+    "Air Woman",
+    "Lance Corporal",
+    "Corporal",
+    "Sergeant",
+    "Flight Sergeant",
+    "Warrant Officer",
+    "Master Warrant Officer",
+    "Air Warrant Officer",
+    "Flying Officer",
+    "Flight Lieutenant",
+    "Squadron Leader",
+    "Wing Commander",
+    "Group Captain",
+    "Air Commodore",
+    "Air Vice Marshal",
+    "Vice Marshal",
+    "Air Chief Marshal",
+    "Marshal of the Air Force",
   ];
 
   const handleLogin = async (e) => {
@@ -29,7 +42,6 @@ export default function AdminLogin() {
     setIsBusy(true);
 
     try {
-      // Use loginAdmin which verifies admin role
       const data = await loginAdmin({
         svc_no: svc_no.trim().toUpperCase(),
         password,
@@ -37,26 +49,11 @@ export default function AdminLogin() {
         rank,
       });
 
-      // Save token
+      // Save token and redirect
       login(data.access_token);
-      
-      // Redirect to admin dashboard
       navigate("/admin/dashboard");
     } catch (err) {
       let message = err.message || "Authentication failed";
-      
-      if (message.includes("not registered")) {
-        message = "Service number not found. Please contact your Super Admin to create an admin account.";
-      } else if (message.includes("Name does not match")) {
-        message = "Full name does not match our records.";
-      } else if (message.includes("Rank does not match")) {
-        message = "Rank does not match our records.";
-      } else if (message.includes("Incorrect password")) {
-        message = "Incorrect password.";
-      } else if (message.includes("Admins only")) {
-        message = "You are not authorized as an Admin.";
-      }
-      
       setErrorMsg(message);
     } finally {
       setIsBusy(false);
@@ -153,15 +150,28 @@ export default function AdminLogin() {
         </button>
       </form>
 
-      <p style={{ marginTop: "20px", fontSize: "0.85em", color: "#666", textAlign: "center" }}>
-        Admins must be registered by the Super Admin.<br/>
-        <a href="/login" style={{ color: "#0d6efd" }}>Evaluator Login</a> | 
-        <a href="/superadmin/login" style={{ color: "#0d6efd" }}> Super Admin Login</a>
+      <p
+        style={{
+          marginTop: "20px",
+          fontSize: "0.85em",
+          color: "#666",
+          textAlign: "center",
+        }}
+      >
+        <a href="/login" style={{ color: "#0d6efd" }}>
+          Main Login
+        </a>{" "}
+        |
+        <a
+          href="/superadmin/login"
+          style={{ color: "#0d6efd", marginLeft: "10px" }}
+        >
+          Super Admin Login
+        </a>
       </p>
     </div>
   );
 }
-
 // // AdminLogin.jsx
 // import { useState } from "react";
 // import { useAuth } from "../../AuthContext";
