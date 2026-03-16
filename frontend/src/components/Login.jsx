@@ -10,52 +10,58 @@ export default function Login() {
   const [rank, setRank] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
   const [isBusy, setIsBusy] = useState(false);
-
   const { login } = useAuth();
   const navigate = useNavigate();
 
   const ranks = [
-    "Air Man",
-    "Air Woman",
-    "Lance Corporal",
-    "Corporal",
-    "Sergeant",
-    "Flight Sergeant",
-    "Warrant Officer",
-    "Master Warrant Officer",
-    "Air Warrant Officer",
-    "Flying Officer",
-    "Flight Lieutenant",
-    "Squadron Leader",
-    "Wing Commander",
-    "Group Captain",
-    "Air Commodore",
-    "Air Vice Marshal",
-    "Vice Marshal",
-    "Air Chief Marshal",
-    "Marshal of the Air Force",
+    "Air Man", "Air Woman", "Lance Corporal", "Corporal", "Sergeant",
+    "Flight Sergeant", "Warrant Officer", "Master Warrant Officer",
+    "Air Warrant Officer", "Flying Officer", "Flight Lieutenant",
+    "Squadron Leader", "Wing Commander", "Group Captain",
+    "Air Commodore", "Air Vice Marshal", "Vice Marshal",
+    "Air Chief Marshal", "Marshal of the Air Force",
   ];
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setErrorMsg("");
     setIsBusy(true);
+
     try {
+      // Use loginUser directly - no auto-registration
+      // Evaluators must be created by Super Admin
       const data = await loginUser({
         svc_no: svc_no.trim().toUpperCase(),
+        password,
         full_name: fullName.trim(),
         rank,
-        password,
       });
 
+      // Check if user is actually an evaluator
       if (data.role !== "evaluator") {
-        throw new Error("This login is only for Evaluators");
+        throw new Error("This login is for Evaluators only. Please use the Admin or Super Admin login pages.");
       }
 
+      // Save token
       login(data.access_token);
+      
+      // Redirect to evaluation form
       window.location.href = "/";
     } catch (err) {
-      setErrorMsg(err.message || "Authentication failed");
+      // Provide clearer error messages
+      let message = err.message || "Authentication failed";
+      
+      if (message.includes("not registered")) {
+        message = "Service number not found. Please contact your Super Admin to create an account.";
+      } else if (message.includes("Name does not match")) {
+        message = "Full name does not match our records.";
+      } else if (message.includes("Rank does not match")) {
+        message = "Rank does not match our records.";
+      } else if (message.includes("Incorrect password")) {
+        message = "Incorrect password.";
+      }
+      
+      setErrorMsg(message);
     } finally {
       setIsBusy(false);
     }
@@ -72,7 +78,7 @@ export default function Login() {
       }}
     >
       <h2 style={{ textAlign: "center", marginBottom: "28px" }}>
-        Sports and Physical Education Evaluator Login
+        NAF PFT Evaluator Login
       </h2>
 
       <form onSubmit={handleLogin}>
@@ -82,7 +88,7 @@ export default function Login() {
             type="text"
             value={svc_no}
             onChange={(e) => setSvcNo(e.target.value)}
-            placeholder="NAF26/10102"
+            placeholder="NAF/26/10102"
             required
             style={{ width: "100%", padding: "10px" }}
           />
@@ -129,7 +135,9 @@ export default function Login() {
         </div>
 
         {errorMsg && (
-          <p style={{ color: "red", marginBottom: "10px" }}>{errorMsg}</p>
+          <p style={{ color: "red", marginBottom: "10px", fontSize: "0.9em" }}>
+            {errorMsg}
+          </p>
         )}
 
         <button
@@ -145,9 +153,15 @@ export default function Login() {
             cursor: isBusy ? "not-allowed" : "pointer",
           }}
         >
-          {isBusy ? "Processing..." : "Login"}
+          {isBusy ? "Authenticating..." : "Login"}
         </button>
       </form>
+
+      <p style={{ marginTop: "20px", fontSize: "0.85em", color: "#666", textAlign: "center" }}>
+        Evaluators must be registered by the Super Admin.<br/>
+        <a href="/admin/login" style={{ color: "#0d6efd" }}>Admin Login</a> | 
+        <a href="/superadmin/login" style={{ color: "#0d6efd" }}> Super Admin Login</a>
+      </p>
     </div>
   );
 }
@@ -226,7 +240,7 @@ export default function Login() {
 //       }}
 //     >
 //       <h2 style={{ textAlign: "center", marginBottom: "28px" }}>
-//         Sports and Physical Education Evaluator Login
+//         Evaluator Login / Registration
 //       </h2>
 
 //       <form onSubmit={handleLogin}>

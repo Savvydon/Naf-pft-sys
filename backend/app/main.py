@@ -2,12 +2,13 @@ import os
 import sys
 import traceback
 from datetime import datetime
+
 print("=== MAIN.PY START ===")
 print("Python version:", sys.version.strip())
 print("Current working dir:", os.getcwd())
 print("DATABASE_URL present?", "yes" if os.getenv("DATABASE_URL") else "NO - MISSING!")
 
-from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Form
+from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Form, Body
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
@@ -19,11 +20,11 @@ try:
     from app.routes.auth import router as auth_router
     from app.routes.superadmin import router as superadmin_router
     from app.services.email_service import send_email_with_pdf
-    from app.services.database import engine, get_db, SessionLocal
+    from app.services.database import engine, get_db
     from app.services.models import Base, PFTResult, User
     from app.schemas import InputSchema
     from app.services.naf_pft import compute_naf_pft
-    from app.services.auth import require_evaluator, get_current_user, get_password_hash
+    from app.services.auth import require_evaluator, get_current_user, require_admin
     print("All project imports successful")
 
 except ImportError as e:
@@ -59,37 +60,15 @@ print("Routers included")
 
 # Create database tables
 print("Creating database tables...")
+
 try:
     Base.metadata.create_all(bind=engine)
     print("Tables created / already exist")
+
 except Exception as e:
     print("!!! FAILED TO CREATE TABLES !!!")
     print("Error:", str(e))
     traceback.print_exc(file=sys.stdout)
-
-# ── SEED SUPER ADMIN ─────────────────────────────────────────────────────
-print("Seeding Super Admin if not exists...")
-try:
-    db = SessionLocal()
-    super_exists = db.query(User).filter(User.role == "super_admin").first()
-    if not super_exists:
-        hashed = get_password_hash("Super@NAF2026")  # ← CHANGE THIS AFTER FIRST LOGIN
-        super_user = User(
-            svc_no="SUPERADMIN/001",
-            full_name="System Super Administrator",
-            rank="Marshal of the Air Force",
-            hashed_password=hashed,
-            role="super_admin",
-            email=None
-        )
-        db.add(super_user)
-        db.commit()
-        print("✅ SUPER ADMIN SEEDED → svc_no: SUPERADMIN/001 | password: Super@NAF2026")
-    else:
-        print("Super Admin already exists")
-    db.close()
-except Exception as e:
-    print("Seeding warning (ignore if already seeded):", str(e))
 
 # ROOT ROUTE
 @app.get("/")
@@ -97,6 +76,7 @@ except Exception as e:
 def root():
     return {"status": "ok", "message": "NAF PFT API is running"}
 
+# HEALTH CHECK
 @app.get("/health")
 def health_check():
     return {
@@ -105,24 +85,71 @@ def health_check():
         "message": "Backend is running"
     }
 
-# SEND EMAIL REPORT
+# SEND EMAIL REPORT - FIXED VERSION (Accepts JSON instead of file)
 @app.post("/send-report")
 async def send_report(
-    email: str = Form(...),
-    file: UploadFile = File(...)
+    data: dict = Body(...),
+    current_user: User = Depends(get_current_user)
 ):
+    """
+    Send PFT report via email.
+    Expects JSON: { "email": "user@example.com", "report_data": {...} }
+    """
     try:
-        pdf_bytes = await file.read()
-        success = await send_email_with_pdf(email=email, pdf_bytes=pdf_bytes)
+        email = data.get("email")
+        report_data = data.get("report_data")
+        
+        if not email or not report_data:
+            raise HTTPException(400, "Email and report_data are required")
+
+        # Generate PDF from report_data (you'll need to implement this in email_service)
+        # For now, sending the data as PDF generation happens on frontend
+        success = await send_email_with_pdf(
+            email=email,
+            report_data=report_data
+        )
+
         if success:
-            return {"status": "success", "message": "Email sent successfully"}
-        raise HTTPException(status_code=500, detail="Email sending failed")
+            return {
+                "status": "success",
+                "message": "Email sent successfully"
+            }
+
+        raise HTTPException(
+            status_code=500,
+            detail="Email sending failed"
+        )
+
     except Exception as e:
         print("EMAIL ERROR:", str(e))
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
+        )
 
-# CHECK DUPLICATE ENTRY
+# Alternative endpoint if you want to keep file upload for frontend PDF
+@app.post("/send-report-pdf")
+async def send_report_pdf(
+    email: str = Form(...),
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user)
+):
+    """Send pre-generated PDF file via email"""
+    try:
+        pdf_bytes = await file.read()
+        success = await send_email_with_pdf(email=email, pdf_bytes=pdf_bytes)
+
+        if success:
+            return {"status": "success", "message": "Email sent successfully"}
+        raise HTTPException(500, "Email sending failed")
+
+    except Exception as e:
+        print("EMAIL ERROR:", str(e))
+        traceback.print_exc()
+        raise HTTPException(500, detail=str(e))
+
+# -----------------------------# CHECK DUPLICATE ENTRY# -----------------------------
 @app.get("/api/exists/{prefix}/{number}/{year}")
 def check_exists(
     prefix: str,
@@ -135,15 +162,25 @@ def check_exists(
         svc_no = f"{prefix}/{number}".strip("/")
         svc_no = "/".join(part.strip() for part in svc_no.split("/"))
         svc_no = svc_no.upper()
+
         if not svc_no.startswith("NAF"):
             svc_no = "NAF/" + svc_no.lstrip("/")
+
         print(f"[EXISTS CHECK] svc_no: '{svc_no}', year: {year}")
+
         exists = (
             db.query(PFTResult)
             .filter(PFTResult.svc_no == svc_no, PFTResult.year == year)
-            .first() is not None
+            .first()
+            is not None
         )
-        return {"exists": exists, "svc_no": svc_no, "year": year}
+
+        return {
+            "exists": exists,
+            "svc_no": svc_no,
+            "year": year
+        }
+
     except Exception as e:
         print("[EXISTS ERROR]", str(e))
         raise HTTPException(status_code=500, detail=str(e))
@@ -157,25 +194,42 @@ def compute_pft(
 ):
     if not (2000 <= data.year <= 2100):
         raise HTTPException(422, "Year must be between 2000 and 2100")
+    
     data_dict = data.model_dump()
     svc_no = data_dict.get("svc_no", "").strip()
+    
     if "/" in svc_no:
         svc_no = "/".join(part.strip() for part in svc_no.split("/"))
     if not svc_no.startswith("NAF"):
         svc_no = "NAF/" + svc_no.lstrip("/")
+    
     data_dict["svc_no"] = svc_no
+    # attach evaluator info from login
     data_dict["evaluator_name"] = current_user.full_name
     data_dict["evaluator_rank"] = current_user.rank
-    print(f"[COMPUTE] svc_no: {svc_no}, year: {data.year}, evaluator: {current_user.full_name} ({current_user.rank})")
+    
+    print(
+        f"[COMPUTE] svc_no: {svc_no}, year: {data.year}, "
+        f"evaluator: {current_user.full_name} ({current_user.rank})"
+    )
+    
     result = compute_naf_pft(data_dict)
+    
     if "error" in result:
         raise HTTPException(400, result["error"])
-    db_data = {k: v for k, v in result.items() if hasattr(PFTResult, k) and v is not None}
+
+    db_data = {
+        k: v
+        for k, v in result.items()
+        if hasattr(PFTResult, k) and v is not None
+    }
+
     try:
         db_result = PFTResult(**db_data)
         db.add(db_result)
         db.commit()
         db.refresh(db_result)
+
         return {
             **result,
             "id": db_result.id,
@@ -183,232 +237,24 @@ def compute_pft(
             "evaluator_rank": db_result.evaluator_rank,
             "message": "PFT result computed and saved successfully",
         }
+
     except IntegrityError:
         db.rollback()
-        raise HTTPException(409, "A Physical Fitness Test result already exists for this Service Number and Year.")
+        raise HTTPException(
+            409,
+            "A Physical Fitness Test result already exists for this Service Number and Year."
+        )
+
     except Exception as e:
         db.rollback()
         print("Database save failed:", str(e))
         traceback.print_exc()
-        raise HTTPException(500, f"Unexpected database error: {str(e)}")
+        raise HTTPException(
+            500,
+            f"Unexpected database error: {str(e)}"
+        )
 
 print("-- MAIN.PY FULLY LOADED --")
-
-# # import os
-# # import sys
-# # import traceback
-# # from datetime import datetime
-
-# # print("=== MAIN.PY START ===")
-# # print("Python version:", sys.version.strip())
-# # print("Current working dir:", os.getcwd())
-# # print("DATABASE_URL present?", "yes" if os.getenv("DATABASE_URL") else "NO - MISSING!")
-
-# # from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Form
-# # from fastapi.middleware.cors import CORSMiddleware
-# # from pydantic import BaseModel
-# # from sqlalchemy.orm import Session
-# # from sqlalchemy.exc import IntegrityError
-
-# # print("Core imports successful")
-
-# # try:
-# #     from app.routes.fitness import router
-# #     from app.services.email_service import send_email_with_pdf
-# #     from app.services.database import engine, get_db
-# #     from app.services.models import Base, PFTResult
-# #     from app.schemas import InputSchema
-# #     from app.services.naf_pft import compute_naf_pft
-# #     print("All project imports successful")
-# # except ImportError as e:
-# #     print("!!! CRITICAL IMPORT ERROR !!!")
-# #     print("Error:", str(e))
-# #     traceback.print_exc(file=sys.stdout)
-# #     sys.exit(1)
-
-# # app = FastAPI(
-# #     title="NAF Physical Fitness Test API",
-# #     description="API for Nigerian Air Force Physical Fitness Test computation and storage",
-# #     version="1.0.0",
-# # )
-
-# # print("FastAPI app instance created")
-
-# # app.add_middleware(
-# #     CORSMiddleware,
-# #     allow_origins=["*"],
-# #     allow_credentials=True,
-# #     allow_methods=["*"],
-# #     allow_headers=["*"],
-# # )
-
-# # print("CORS middleware added")
-
-# # app.include_router(router)
-
-# # print("Router included")
-
-
-# # # ROOT ROUTE
-# # @app.get("/")
-# # @app.head("/")
-# # def root():
-# #     return {"status": "ok", "message": "NAF PFT API is running"}
-
-
-# # # HEALTH CHECK
-# # @app.get("/health")
-# # def health_check():
-# #     return {
-# #         "status": "healthy",
-# #         "timestamp": datetime.utcnow().isoformat(),
-# #         "message": "Backend is running"
-# #     }
-
-
-# # print("Creating database tables...")
-
-# # try:
-# #     Base.metadata.create_all(bind=engine)
-# #     print("Tables created / already exist")
-# # except Exception as e:
-# #     print("!!! FAILED TO CREATE TABLES !!!")
-# #     print("Error:", str(e))
-# #     traceback.print_exc(file=sys.stdout)
-
-
-# # # SEND EMAIL REPORT WITH PDF
-# # @app.post("/send-report")
-# # async def send_report(
-# #     email: str = Form(...),
-# #     file: UploadFile = File(...)
-# # ):
-
-# #     try:
-# #         pdf_bytes = await file.read()
-
-# #         success = await send_email_with_pdf(
-# #             email=email,
-# #             pdf_bytes=pdf_bytes
-# #         )
-
-# #         if success:
-# #             return {
-# #                 "status": "success",
-# #                 "message": "Email sent successfully"
-# #             }
-
-# #         raise HTTPException(
-# #             status_code=500,
-# #             detail="Email sending failed"
-# #         )
-
-# #     except Exception as e:
-# #         print("EMAIL ERROR:", str(e))
-# #         traceback.print_exc()
-# #         raise HTTPException(
-# #             status_code=500,
-# #             detail=str(e)
-# #         )
-
-
-# # # CHECK IF RESULT EXISTS
-# # @app.get("/api/exists/{prefix}/{number}/{year}")
-# # def check_exists(prefix: str, number: str, year: int, db: Session = Depends(get_db)):
-
-# #     try:
-# #         svc_no = f"{prefix}/{number}".strip("/")
-# #         svc_no = "/".join(part.strip() for part in svc_no.split("/"))
-# #         svc_no = svc_no.upper()
-
-# #         if not svc_no.startswith("NAF"):
-# #             svc_no = "NAF/" + svc_no.lstrip("/")
-
-# #         print(f"[EXISTS CHECK] merged svc_no: '{svc_no}', year: {year}")
-
-# #         exists = (
-# #             db.query(PFTResult)
-# #             .filter(PFTResult.svc_no == svc_no, PFTResult.year == year)
-# #             .first()
-# #             is not None
-# #         )
-
-# #         return {"exists": exists, "svc_no": svc_no, "year": year}
-
-# #     except Exception as e:
-# #         error_msg = f"Exists check failed: {str(e)}"
-# #         print(f"[EXISTS ERROR] {error_msg}")
-# #         raise HTTPException(status_code=500, detail=error_msg)
-
-
-# # # COMPUTE PFT
-# # @app.post("/api/compute")
-# # def compute_pft(data: InputSchema, db: Session = Depends(get_db)):
-
-# #     if not (2000 <= data.year <= 2100):
-# #         raise HTTPException(422, "Year must be between 2000 and 2100")
-
-# #     data_dict = data.model_dump()
-
-# #     svc_no = data_dict.get("svc_no", "").strip()
-
-# #     if '/' in svc_no:
-# #         svc_no = "/".join(part.strip() for part in svc_no.split("/"))
-
-# #     if not svc_no.startswith("NAF"):
-# #         svc_no = "NAF" + svc_no
-
-# #     data_dict["svc_no"] = svc_no
-
-# #     print(f"[COMPUTE] svc_no: '{svc_no}', year: {data.year}")
-
-# #     result = compute_naf_pft(data_dict)
-
-# #     if "error" in result:
-# #         raise HTTPException(400, result["error"])
-
-# #     db_data = {
-# #         k: v
-# #         for k, v in result.items()
-# #         if hasattr(PFTResult, k) and v is not None
-# #     }
-
-# #     try:
-# #         db_result = PFTResult(**db_data)
-
-# #         db.add(db_result)
-# #         db.commit()
-# #         db.refresh(db_result)
-
-# #         return {
-# #             **result,
-# #             "id": db_result.id,
-# #             "message": "PFT result computed and saved successfully",
-# #         }
-
-# #     except IntegrityError:
-# #         db.rollback()
-
-# #         raise HTTPException(
-# #             409,
-# #             "A Physical Fitness Test result already exists for this Service Number and Year."
-# #         )
-
-# #     except Exception as e:
-# #         db.rollback()
-
-# #         print("Database save failed:", str(e))
-# #         traceback.print_exc()
-
-# #         raise HTTPException(
-# #             500,
-# #             f"Unexpected database error: {str(e)}"
-# #         )
-
-
-# # print("-- MAIN.PY FULLY LOADED --")
-
-
 
 # import os
 # import sys
@@ -422,26 +268,20 @@ print("-- MAIN.PY FULLY LOADED --")
 
 # from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Form
 # from fastapi.middleware.cors import CORSMiddleware
+# from pydantic import BaseModel
 # from sqlalchemy.orm import Session
 # from sqlalchemy.exc import IntegrityError
 
 # print("Core imports successful")
 
 # try:
-#     from app.routes.fitness import router as fitness_router
-#     from app.routes.auth import router as auth_router
-#     from app.routes.superadmin import router as superadmin_router
-
+#     from app.routes.fitness import router
 #     from app.services.email_service import send_email_with_pdf
 #     from app.services.database import engine, get_db
-#     from app.services.models import Base, PFTResult, User
+#     from app.services.models import Base, PFTResult
 #     from app.schemas import InputSchema
 #     from app.services.naf_pft import compute_naf_pft
-
-#     from app.services.auth import require_evaluator, get_current_user
-
 #     print("All project imports successful")
-
 # except ImportError as e:
 #     print("!!! CRITICAL IMPORT ERROR !!!")
 #     print("Error:", str(e))
@@ -451,7 +291,7 @@ print("-- MAIN.PY FULLY LOADED --")
 # app = FastAPI(
 #     title="NAF Physical Fitness Test API",
 #     description="API for Nigerian Air Force Physical Fitness Test computation and storage",
-#     version="2.0.0",
+#     version="1.0.0",
 # )
 
 # print("FastAPI app instance created")
@@ -463,52 +303,22 @@ print("-- MAIN.PY FULLY LOADED --")
 #     allow_methods=["*"],
 #     allow_headers=["*"],
 # )
-# # app.add_middleware(
-# #     CORSMiddleware,
-# #     allow_origins=[
-# #         "http://localhost:5174",
-# #         "http://localhost:5173",
-# #         "https://naf-pft-sys-frontend.onrender.com"
-# #     ],
-# #     allow_credentials=True,
-# #     allow_methods=["*"],
-# #     allow_headers=["*"],
-# # )
 
 # print("CORS middleware added")
 
-# # Register routers
-# app.include_router(fitness_router)
-# app.include_router(auth_router)
-# app.include_router(superadmin_router)
+# app.include_router(router)
 
-# print("Routers included")
-
-# # Create database tables
-# print("Creating database tables...")
-
-# try:
-#     Base.metadata.create_all(bind=engine)
-#     print("Tables created / already exist")
-
-# except Exception as e:
-#     print("!!! FAILED TO CREATE TABLES !!!")
-#     print("Error:", str(e))
-#     traceback.print_exc(file=sys.stdout)
+# print("Router included")
 
 
-# # -----------------------------
 # # ROOT ROUTE
-# # -----------------------------
 # @app.get("/")
 # @app.head("/")
 # def root():
 #     return {"status": "ok", "message": "NAF PFT API is running"}
 
 
-# # -----------------------------
 # # HEALTH CHECK
-# # -----------------------------
 # @app.get("/health")
 # def health_check():
 #     return {
@@ -518,9 +328,18 @@ print("-- MAIN.PY FULLY LOADED --")
 #     }
 
 
-# # -----------------------------
-# # SEND EMAIL REPORT
-# # -----------------------------
+# print("Creating database tables...")
+
+# try:
+#     Base.metadata.create_all(bind=engine)
+#     print("Tables created / already exist")
+# except Exception as e:
+#     print("!!! FAILED TO CREATE TABLES !!!")
+#     print("Error:", str(e))
+#     traceback.print_exc(file=sys.stdout)
+
+
+# # SEND EMAIL REPORT WITH PDF
 # @app.post("/send-report")
 # async def send_report(
 #     email: str = Form(...),
@@ -549,24 +368,15 @@ print("-- MAIN.PY FULLY LOADED --")
 #     except Exception as e:
 #         print("EMAIL ERROR:", str(e))
 #         traceback.print_exc()
-
 #         raise HTTPException(
 #             status_code=500,
 #             detail=str(e)
 #         )
 
 
-# # -----------------------------
-# # CHECK DUPLICATE ENTRY
-# # -----------------------------
+# # CHECK IF RESULT EXISTS
 # @app.get("/api/exists/{prefix}/{number}/{year}")
-# def check_exists(
-#     prefix: str,
-#     number: str,
-#     year: int,
-#     db: Session = Depends(get_db),
-#     current_user: User = Depends(get_current_user)
-# ):
+# def check_exists(prefix: str, number: str, year: int, db: Session = Depends(get_db)):
 
 #     try:
 #         svc_no = f"{prefix}/{number}".strip("/")
@@ -576,7 +386,7 @@ print("-- MAIN.PY FULLY LOADED --")
 #         if not svc_no.startswith("NAF"):
 #             svc_no = "NAF/" + svc_no.lstrip("/")
 
-#         print(f"[EXISTS CHECK] svc_no: '{svc_no}', year: {year}")
+#         print(f"[EXISTS CHECK] merged svc_no: '{svc_no}', year: {year}")
 
 #         exists = (
 #             db.query(PFTResult)
@@ -585,26 +395,17 @@ print("-- MAIN.PY FULLY LOADED --")
 #             is not None
 #         )
 
-#         return {
-#             "exists": exists,
-#             "svc_no": svc_no,
-#             "year": year
-#         }
+#         return {"exists": exists, "svc_no": svc_no, "year": year}
 
 #     except Exception as e:
-#         print("[EXISTS ERROR]", str(e))
-#         raise HTTPException(status_code=500, detail=str(e))
+#         error_msg = f"Exists check failed: {str(e)}"
+#         print(f"[EXISTS ERROR] {error_msg}")
+#         raise HTTPException(status_code=500, detail=error_msg)
 
 
-# # -----------------------------
-# # COMPUTE PFT RESULT
-# # -----------------------------
+# # COMPUTE PFT
 # @app.post("/api/compute")
-# def compute_pft(
-#     data: InputSchema,
-#     db: Session = Depends(get_db),
-#     current_user: User = Depends(require_evaluator)
-# ):
+# def compute_pft(data: InputSchema, db: Session = Depends(get_db)):
 
 #     if not (2000 <= data.year <= 2100):
 #         raise HTTPException(422, "Year must be between 2000 and 2100")
@@ -613,22 +414,15 @@ print("-- MAIN.PY FULLY LOADED --")
 
 #     svc_no = data_dict.get("svc_no", "").strip()
 
-#     if "/" in svc_no:
+#     if '/' in svc_no:
 #         svc_no = "/".join(part.strip() for part in svc_no.split("/"))
 
 #     if not svc_no.startswith("NAF"):
-#         svc_no = "NAF/" + svc_no.lstrip("/")
+#         svc_no = "NAF" + svc_no
 
 #     data_dict["svc_no"] = svc_no
 
-#     # attach evaluator info from login
-#     data_dict["evaluator_name"] = current_user.full_name
-#     data_dict["evaluator_rank"] = current_user.rank
-
-#     print(
-#         f"[COMPUTE] svc_no: {svc_no}, year: {data.year}, "
-#         f"evaluator: {current_user.full_name} ({current_user.rank})"
-#     )
+#     print(f"[COMPUTE] svc_no: '{svc_no}', year: {data.year}")
 
 #     result = compute_naf_pft(data_dict)
 
@@ -642,7 +436,6 @@ print("-- MAIN.PY FULLY LOADED --")
 #     }
 
 #     try:
-
 #         db_result = PFTResult(**db_data)
 
 #         db.add(db_result)
@@ -652,13 +445,10 @@ print("-- MAIN.PY FULLY LOADED --")
 #         return {
 #             **result,
 #             "id": db_result.id,
-#             "evaluator_name": db_result.evaluator_name,
-#             "evaluator_rank": db_result.evaluator_rank,
 #             "message": "PFT result computed and saved successfully",
 #         }
 
 #     except IntegrityError:
-
 #         db.rollback()
 
 #         raise HTTPException(
@@ -667,7 +457,6 @@ print("-- MAIN.PY FULLY LOADED --")
 #         )
 
 #     except Exception as e:
-
 #         db.rollback()
 
 #         print("Database save failed:", str(e))
@@ -681,3 +470,275 @@ print("-- MAIN.PY FULLY LOADED --")
 
 # print("-- MAIN.PY FULLY LOADED --")
 
+
+
+import os
+import sys
+import traceback
+from datetime import datetime
+
+print("=== MAIN.PY START ===")
+print("Python version:", sys.version.strip())
+print("Current working dir:", os.getcwd())
+print("DATABASE_URL present?", "yes" if os.getenv("DATABASE_URL") else "NO - MISSING!")
+
+from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Form
+from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
+
+print("Core imports successful")
+
+try:
+    from app.routes.fitness import router as fitness_router
+    from app.routes.auth import router as auth_router
+    from app.routes.superadmin import router as superadmin_router
+
+    from app.services.email_service import send_email_with_pdf
+    from app.services.database import engine, get_db
+    from app.services.models import Base, PFTResult, User
+    from app.schemas import InputSchema
+    from app.services.naf_pft import compute_naf_pft
+
+    from app.services.auth import require_evaluator, get_current_user
+
+    print("All project imports successful")
+
+except ImportError as e:
+    print("!!! CRITICAL IMPORT ERROR !!!")
+    print("Error:", str(e))
+    traceback.print_exc(file=sys.stdout)
+    sys.exit(1)
+
+app = FastAPI(
+    title="NAF Physical Fitness Test API",
+    description="API for Nigerian Air Force Physical Fitness Test computation and storage",
+    version="2.0.0",
+)
+
+print("FastAPI app instance created")
+
+# app.add_middleware(
+#     CORSMiddleware,
+#     allow_origins=["*"],
+#     allow_credentials=True,
+#     allow_methods=["*"],
+#     allow_headers=["*"],
+# )
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5174",
+        "http://localhost:5173",
+        "https://naf-pft-sys-frontend.onrender.com"
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+print("CORS middleware added")
+
+# Register routers
+app.include_router(fitness_router)
+app.include_router(auth_router)
+app.include_router(superadmin_router)
+
+print("Routers included")
+
+# Create database tables
+print("Creating database tables...")
+
+try:
+    Base.metadata.create_all(bind=engine)
+    print("Tables created / already exist")
+
+except Exception as e:
+    print("!!! FAILED TO CREATE TABLES !!!")
+    print("Error:", str(e))
+    traceback.print_exc(file=sys.stdout)
+
+
+# -----------------------------
+# ROOT ROUTE
+# -----------------------------
+@app.get("/")
+@app.head("/")
+def root():
+    return {"status": "ok", "message": "NAF PFT API is running"}
+
+
+# -----------------------------
+# HEALTH CHECK
+# -----------------------------
+@app.get("/health")
+def health_check():
+    return {
+        "status": "healthy",
+        "timestamp": datetime.utcnow().isoformat(),
+        "message": "Backend is running"
+    }
+
+
+# -----------------------------
+# SEND EMAIL REPORT
+# -----------------------------
+@app.post("/send-report")
+async def send_report(
+    email: str = Form(...),
+    file: UploadFile = File(...)
+):
+
+    try:
+        pdf_bytes = await file.read()
+
+        success = await send_email_with_pdf(
+            email=email,
+            pdf_bytes=pdf_bytes
+        )
+
+        if success:
+            return {
+                "status": "success",
+                "message": "Email sent successfully"
+            }
+
+        raise HTTPException(
+            status_code=500,
+            detail="Email sending failed"
+        )
+
+    except Exception as e:
+        print("EMAIL ERROR:", str(e))
+        traceback.print_exc()
+
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
+        )
+
+
+# -----------------------------
+# CHECK DUPLICATE ENTRY
+# -----------------------------
+@app.get("/api/exists/{prefix}/{number}/{year}")
+def check_exists(
+    prefix: str,
+    number: str,
+    year: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+
+    try:
+        svc_no = f"{prefix}/{number}".strip("/")
+        svc_no = "/".join(part.strip() for part in svc_no.split("/"))
+        svc_no = svc_no.upper()
+
+        if not svc_no.startswith("NAF"):
+            svc_no = "NAF/" + svc_no.lstrip("/")
+
+        print(f"[EXISTS CHECK] svc_no: '{svc_no}', year: {year}")
+
+        exists = (
+            db.query(PFTResult)
+            .filter(PFTResult.svc_no == svc_no, PFTResult.year == year)
+            .first()
+            is not None
+        )
+
+        return {
+            "exists": exists,
+            "svc_no": svc_no,
+            "year": year
+        }
+
+    except Exception as e:
+        print("[EXISTS ERROR]", str(e))
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# -----------------------------
+# COMPUTE PFT RESULT
+# -----------------------------
+@app.post("/api/compute")
+def compute_pft(
+    data: InputSchema,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_evaluator)
+):
+
+    if not (2000 <= data.year <= 2100):
+        raise HTTPException(422, "Year must be between 2000 and 2100")
+
+    data_dict = data.model_dump()
+
+    svc_no = data_dict.get("svc_no", "").strip()
+
+    if "/" in svc_no:
+        svc_no = "/".join(part.strip() for part in svc_no.split("/"))
+
+    if not svc_no.startswith("NAF"):
+        svc_no = "NAF/" + svc_no.lstrip("/")
+
+    data_dict["svc_no"] = svc_no
+
+    # attach evaluator info from login
+    data_dict["evaluator_name"] = current_user.full_name
+    data_dict["evaluator_rank"] = current_user.rank
+
+    print(
+        f"[COMPUTE] svc_no: {svc_no}, year: {data.year}, "
+        f"evaluator: {current_user.full_name} ({current_user.rank})"
+    )
+
+    result = compute_naf_pft(data_dict)
+
+    if "error" in result:
+        raise HTTPException(400, result["error"])
+
+    db_data = {
+        k: v
+        for k, v in result.items()
+        if hasattr(PFTResult, k) and v is not None
+    }
+
+    try:
+
+        db_result = PFTResult(**db_data)
+
+        db.add(db_result)
+        db.commit()
+        db.refresh(db_result)
+
+        return {
+            **result,
+            "id": db_result.id,
+            "evaluator_name": db_result.evaluator_name,
+            "evaluator_rank": db_result.evaluator_rank,
+            "message": "PFT result computed and saved successfully",
+        }
+
+    except IntegrityError:
+
+        db.rollback()
+
+        raise HTTPException(
+            409,
+            "A Physical Fitness Test result already exists for this Service Number and Year."
+        )
+
+    except Exception as e:
+
+        db.rollback()
+
+        print("Database save failed:", str(e))
+        traceback.print_exc()
+
+        raise HTTPException(
+            500,
+            f"Unexpected database error: {str(e)}"
+        )
+
+
+print("-- MAIN.PY FULLY LOADED --")

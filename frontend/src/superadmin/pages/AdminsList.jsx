@@ -1,23 +1,28 @@
 import { useEffect, useState } from "react";
-import { useAuth } from "../../AuthContext";
+import { useNavigate } from "react-router-dom";
+import "../styles/superadmin.css";
 
 export default function AdminsList() {
-  const { token } = useAuth();
-  const [data, setData] = useState([]);
+  const [admins, setAdmins] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const navigate = useNavigate();
+  const token = localStorage.getItem("pft_token");
 
-  const loadAdmins = async () => {
+  useEffect(() => {
+    fetchAdmins();
+  }, []);
+
+  const fetchAdmins = async () => {
     try {
-      const res = await fetch(
-        "https://naf-pft-sys-1.onrender.com/superadmin/admins",
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
-      if (!res.ok) throw new Error("Failed to load admins");
-      const json = await res.json();
-      setData(json);
+      const res = await fetch("https://naf-pft-sys-1.onrender.com/superadmin/admins", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (!res.ok) throw new Error("Failed to fetch admins");
+      
+      const data = await res.json();
+      setAdmins(data);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -25,117 +30,67 @@ export default function AdminsList() {
     }
   };
 
-  const deleteAdmin = async (svc_no) => {
-    if (!window.confirm(`Delete admin ${svc_no}?`)) return;
+  const handleDelete = async (id, svcNo) => {
+    if (!window.confirm(`Are you sure you want to delete admin ${svcNo}?`)) return;
+    
     try {
-      const res = await fetch(
-        `https://naf-pft-sys-1.onrender.com/superadmin/users/${svc_no}`,
-        {
-          method: "DELETE",
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
+      const res = await fetch(`https://naf-pft-sys-1.onrender.com/superadmin/admins/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
       if (!res.ok) throw new Error("Delete failed");
-      loadAdmins();
+      
+      setAdmins(admins.filter(a => a.id !== id));
+      alert("Admin deleted successfully");
     } catch (err) {
-      alert(err.message);
+      alert("Error: " + err.message);
     }
   };
 
-  useEffect(() => {
-    loadAdmins();
-  }, []);
+  const viewDetails = (id) => {
+    navigate(`/superadmin/admins/${id}`);
+  };
 
-  if (loading) return <p>Loading admins...</p>;
-  if (error) return <p style={{ color: "red" }}>Error: {error}</p>;
+  if (loading) return <div className="loading">Loading admins...</div>;
+  if (error) return <div className="error">Error: {error}</div>;
 
   return (
-    <div style={{ padding: "20px" }}>
-      <h2>Admins</h2>
-      <table style={{ width: "100%", borderCollapse: "collapse" }}>
+    <div className="superadmin-container">
+      <div className="page-header">
+        <h2>Admins Management</h2>
+        <button onClick={() => navigate("/superadmin/admins/create")} className="create-btn">
+          + Create Admin
+        </button>
+      </div>
+
+      <table className="data-table">
         <thead>
-          <tr style={{ background: "#f0f0f0" }}>
-            <th style={{ padding: 12, border: "1px solid #ddd" }}>Name</th>
-            <th style={{ padding: 12, border: "1px solid #ddd" }}>Rank</th>
-            <th style={{ padding: 12, border: "1px solid #ddd" }}>
-              Service No
-            </th>
-            <th style={{ padding: 12, border: "1px solid #ddd" }}>Action</th>
+          <tr>
+            <th>Name</th>
+            <th>Rank</th>
+            <th>Service Number</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
-          {data.map((a) => (
-            <tr key={a.svc_no}>
-              <td style={{ padding: 12, border: "1px solid #ddd" }}>
-                {a.full_name}
-              </td>
-              <td style={{ padding: 12, border: "1px solid #ddd" }}>
-                {a.rank}
-              </td>
-              <td style={{ padding: 12, border: "1px solid #ddd" }}>
-                {a.svc_no}
-              </td>
-              <td
-                style={{
-                  padding: 12,
-                  border: "1px solid #ddd",
-                  textAlign: "center",
-                }}
-              >
-                <button
-                  onClick={() => deleteAdmin(a.svc_no)}
-                  style={{
-                    color: "red",
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
-                  }}
-                >
-                  Delete
-                </button>
+          {admins.map((a) => (
+            <tr key={a.id}>
+              <td>{a.full_name}</td>
+              <td>{a.rank}</td>
+              <td>{a.svc_no}</td>
+              <td className="actions">
+                <button onClick={() => viewDetails(a.id)} className="view-btn">View</button>
+                <button onClick={() => handleDelete(a.id, a.svc_no)} className="delete-btn">Delete</button>
               </td>
             </tr>
           ))}
         </tbody>
       </table>
+      
+      <button onClick={() => navigate("/superadmin/dashboard")} className="back-btn">
+        ← Back to Dashboard
+      </button>
     </div>
   );
 }
-
-// import { useEffect, useState } from "react";
-
-// export default function AdminsList() {
-//   const [admins, setAdmins] = useState([]);
-
-//   useEffect(() => {
-//     fetch("https://naf-pft-sys-1.onrender.com/superadmin/admins")
-//       .then((res) => res.json())
-//       .then((data) => setAdmins(data));
-//   }, []);
-
-//   return (
-//     <div>
-//       <h2>Admins</h2>
-
-//       <table>
-//         <thead>
-//           <tr>
-//             <th>Name</th>
-//             <th>Rank</th>
-//             <th>Service Number</th>
-//           </tr>
-//         </thead>
-
-//         <tbody>
-//           {admins.map((a) => (
-//             <tr key={a.id}>
-//               <td>{a.full_name}</td>
-//               <td>{a.rank}</td>
-//               <td>{a.svc_no}</td>
-//             </tr>
-//           ))}
-//         </tbody>
-//       </table>
-//     </div>
-//   );
-// }

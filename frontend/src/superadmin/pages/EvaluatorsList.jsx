@@ -1,23 +1,28 @@
 import { useEffect, useState } from "react";
-import { useAuth } from "../../AuthContext";
+import { useNavigate } from "react-router-dom";
+import "../styles/superadmin.css";
 
 export default function EvaluatorsList() {
-  const { token } = useAuth();
-  const [data, setData] = useState([]);
+  const [evaluators, setEvaluators] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const navigate = useNavigate();
+  const token = localStorage.getItem("pft_token");
 
-  const loadEvaluators = async () => {
+  useEffect(() => {
+    fetchEvaluators();
+  }, []);
+
+  const fetchEvaluators = async () => {
     try {
-      const res = await fetch(
-        "https://naf-pft-sys-1.onrender.com/superadmin/evaluators",
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
-      if (!res.ok) throw new Error("Failed to load evaluators");
-      const json = await res.json();
-      setData(json);
+      const res = await fetch("https://naf-pft-sys-1.onrender.com/superadmin/evaluators", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (!res.ok) throw new Error("Failed to fetch evaluators");
+      
+      const data = await res.json();
+      setEvaluators(data);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -25,131 +30,73 @@ export default function EvaluatorsList() {
     }
   };
 
-  const deleteEvaluator = async (svc_no) => {
-    if (!window.confirm(`Delete evaluator ${svc_no}?`)) return;
+  const handleDelete = async (id, svcNo) => {
+    if (!window.confirm(`Are you sure you want to delete evaluator ${svcNo}?`)) return;
+    
     try {
-      const res = await fetch(
-        `https://naf-pft-sys-1.onrender.com/superadmin/users/${svc_no}`,
-        {
-          method: "DELETE",
-          headers: { Authorization: `Bearer ${token}` },
-        },
-      );
+      const res = await fetch(`https://naf-pft-sys-1.onrender.com/superadmin/evaluators/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
       if (!res.ok) throw new Error("Delete failed");
-      loadEvaluators();
+      
+      setEvaluators(evaluators.filter(e => e.id !== id));
+      alert("Evaluator deleted successfully");
     } catch (err) {
-      alert(err.message);
+      alert("Error: " + err.message);
     }
   };
 
-  useEffect(() => {
-    loadEvaluators();
-  }, []);
+  const viewDetails = (id) => {
+    navigate(`/superadmin/evaluators/${id}`);
+  };
 
-  if (loading) return <p>Loading evaluators...</p>;
-  if (error) return <p style={{ color: "red" }}>Error: {error}</p>;
+  if (loading) return <div className="loading">Loading evaluators...</div>;
+  if (error) return <div className="error">Error: {error}</div>;
 
   return (
-    <div style={{ padding: "20px" }}>
-      <h2>Evaluators</h2>
-      <table style={{ width: "100%", borderCollapse: "collapse" }}>
+    <div className="superadmin-container">
+      <div className="page-header">
+        <h2>Evaluators Management</h2>
+        <button onClick={() => navigate("/superadmin/evaluators/create")} className="create-btn">
+          + Create Evaluator
+        </button>
+      </div>
+
+      <table className="data-table">
         <thead>
-          <tr style={{ background: "#f0f0f0" }}>
-            <th style={{ padding: 12, border: "1px solid #ddd" }}>Name</th>
-            <th style={{ padding: 12, border: "1px solid #ddd" }}>Rank</th>
-            <th style={{ padding: 12, border: "1px solid #ddd" }}>
-              Service No
-            </th>
-            <th style={{ padding: 12, border: "1px solid #ddd" }}>
-              Evaluations
-            </th>
-            <th style={{ padding: 12, border: "1px solid #ddd" }}>Action</th>
+          <tr>
+            <th>Name</th>
+            <th>Rank</th>
+            <th>Service Number</th>
+            <th>Evaluations Done</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
-          {data.map((ev) => (
-            <tr key={ev.svc_no}>
-              <td style={{ padding: 12, border: "1px solid #ddd" }}>
-                {ev.full_name}
+          {evaluators.map((e) => (
+            <tr key={e.id}>
+              <td>{e.full_name}</td>
+              <td>{e.rank}</td>
+              <td>{e.svc_no}</td>
+              <td>
+                <span className={`badge ${e.evaluations_count > 0 ? 'active' : 'zero'}`}>
+                  {e.evaluations_count}
+                </span>
               </td>
-              <td style={{ padding: 12, border: "1px solid #ddd" }}>
-                {ev.rank}
-              </td>
-              <td style={{ padding: 12, border: "1px solid #ddd" }}>
-                {ev.svc_no}
-              </td>
-              <td
-                style={{
-                  padding: 12,
-                  border: "1px solid #ddd",
-                  textAlign: "center",
-                }}
-              >
-                {ev.evaluations_count}
-              </td>
-              <td
-                style={{
-                  padding: 12,
-                  border: "1px solid #ddd",
-                  textAlign: "center",
-                }}
-              >
-                <button
-                  onClick={() => deleteEvaluator(ev.svc_no)}
-                  style={{
-                    color: "red",
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
-                  }}
-                >
-                  Delete
-                </button>
+              <td className="actions">
+                <button onClick={() => viewDetails(e.id)} className="view-btn">View</button>
+                <button onClick={() => handleDelete(e.id, e.svc_no)} className="delete-btn">Delete</button>
               </td>
             </tr>
           ))}
         </tbody>
       </table>
+      
+      <button onClick={() => navigate("/superadmin/dashboard")} className="back-btn">
+        ← Back to Dashboard
+      </button>
     </div>
   );
 }
-
-// import { useEffect, useState } from "react";
-
-// export default function EvaluatorsList() {
-//   const [evaluators, setEvaluators] = useState([]);
-
-//   useEffect(() => {
-//     fetch("https://naf-pft-sys-1.onrender.com/superadmin/evaluators")
-//       .then((res) => res.json())
-//       .then((data) => setEvaluators(data));
-//   }, []);
-
-//   return (
-//     <div>
-//       <h2>Evaluators</h2>
-
-//       <table>
-//         <thead>
-//           <tr>
-//             <th>Name</th>
-//             <th>Rank</th>
-//             <th>Service Number</th>
-//             <th>Evaluations</th>
-//           </tr>
-//         </thead>
-
-//         <tbody>
-//           {evaluators.map((e) => (
-//             <tr key={e.id}>
-//               <td>{e.full_name}</td>
-//               <td>{e.rank}</td>
-//               <td>{e.svc_no}</td>
-//               <td>{e.evaluations_count}</td>
-//             </tr>
-//           ))}
-//         </tbody>
-//       </table>
-//     </div>
-//   );
-// }
