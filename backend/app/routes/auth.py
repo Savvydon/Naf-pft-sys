@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.schemas import UserLogin, UserOut, UserRegister
+from app.schemas import UserLogin, Token, UserOut, UserRegister
 from app.services.auth import (
     create_access_token,
     get_current_user,
@@ -53,9 +53,9 @@ def register_user(
 
 
 # ── LOGIN ───────────────────────────────────────────
-# REMOVED: response_model=Token - now returns raw dict
+# CRITICAL: response_model=Token ensures all fields are validated
 
-@router.post("/login")
+@router.post("/login", response_model=Token)
 def login_for_access_token(
     data: UserLogin,
     db: Session = Depends(get_db)
@@ -90,13 +90,13 @@ def login_for_access_token(
 
     access_token = create_access_token(data={"sub": user.svc_no})
 
-    # Return raw dict - no Pydantic validation to strip fields
+    # CRITICAL: Must return ALL fields that Token schema expects
     return {
         "access_token": access_token,
         "token_type": "bearer",
-        "role": user.role,
-        "full_name": user.full_name,
-        "rank": user.rank
+        "role": user.role,           # ✅ Required by Token schema
+        "full_name": user.full_name,  # ✅ Required by Token schema
+        "rank": user.rank             # ✅ Required by Token schema
     }
 
 

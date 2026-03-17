@@ -83,7 +83,9 @@ class Token(BaseModel):
 
     access_token: str
     token_type: str = "bearer"
-
+    role: str                   
+    full_name: str               
+    rank: str   
 
 class TokenData(BaseModel):
 
