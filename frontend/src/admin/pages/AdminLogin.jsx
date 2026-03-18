@@ -10,7 +10,6 @@ export default function AdminLogin() {
   const [rank, setRank] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
   const [isBusy, setIsBusy] = useState(false);
-  const [debugInfo, setDebugInfo] = useState("");
 
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -40,7 +39,6 @@ export default function AdminLogin() {
   const handleLogin = async (e) => {
     e.preventDefault();
     setErrorMsg("");
-    setDebugInfo("");
     setIsBusy(true);
 
     try {
@@ -53,15 +51,25 @@ export default function AdminLogin() {
         rank,
       });
 
-      console.log("[LOGIN] Success, saving token...");
+      console.log(
+        "[LOGIN] Success, token received:",
+        data.access_token ? "YES" : "NO",
+      );
+      console.log("[LOGIN] Role:", data.role);
+
+      // CRITICAL: Save token BEFORE navigating
       login(data.access_token);
 
-      console.log("[LOGIN] Redirecting to dashboard...");
-      navigate("/admin/dashboard");
+      console.log("[LOGIN] Token saved, navigating to dashboard...");
+
+      // Use window.location for hard redirect (most reliable)
+      window.location.href = "/admin/dashboard";
+
+      // Alternative: use navigate (if React Router is working)
+      // navigate("/admin/dashboard", { replace: true });
     } catch (err) {
       console.error("[LOGIN ERROR]", err);
       setErrorMsg(err.message || "Authentication failed");
-      setDebugInfo(`Error: ${err.message}`);
     } finally {
       setIsBusy(false);
     }
@@ -92,12 +100,7 @@ export default function AdminLogin() {
             onChange={(e) => setSvcNo(e.target.value)}
             placeholder="NAF/26/10102"
             required
-            style={{
-              width: "100%",
-              padding: "10px",
-              borderRadius: "4px",
-              border: "1px solid #ccc",
-            }}
+            style={{ width: "100%", padding: "10px" }}
           />
         </div>
 
@@ -108,12 +111,7 @@ export default function AdminLogin() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            style={{
-              width: "100%",
-              padding: "10px",
-              borderRadius: "4px",
-              border: "1px solid #ccc",
-            }}
+            style={{ width: "100%", padding: "10px" }}
           />
         </div>
 
@@ -125,12 +123,7 @@ export default function AdminLogin() {
             onChange={(e) => setFullName(e.target.value)}
             placeholder="John Doe"
             required
-            style={{
-              width: "100%",
-              padding: "10px",
-              borderRadius: "4px",
-              border: "1px solid #ccc",
-            }}
+            style={{ width: "100%", padding: "10px" }}
           />
         </div>
 
@@ -140,12 +133,7 @@ export default function AdminLogin() {
             value={rank}
             onChange={(e) => setRank(e.target.value)}
             required
-            style={{
-              width: "100%",
-              padding: "10px",
-              borderRadius: "4px",
-              border: "1px solid #ccc",
-            }}
+            style={{ width: "100%", padding: "10px" }}
           >
             <option value="">Select Rank</option>
             {ranks.map((r) => (
@@ -161,29 +149,12 @@ export default function AdminLogin() {
             style={{
               color: "#dc3545",
               marginBottom: "15px",
-              fontSize: "0.9em",
               padding: "10px",
               background: "#f8d7da",
               borderRadius: "4px",
             }}
           >
             <strong>Error:</strong> {errorMsg}
-          </div>
-        )}
-
-        {debugInfo && (
-          <div
-            style={{
-              color: "#0c5460",
-              marginBottom: "15px",
-              fontSize: "0.8em",
-              padding: "8px",
-              background: "#d1ecf1",
-              borderRadius: "4px",
-              fontFamily: "monospace",
-            }}
-          >
-            {debugInfo}
           </div>
         )}
 
@@ -198,7 +169,6 @@ export default function AdminLogin() {
             border: "none",
             borderRadius: "6px",
             cursor: isBusy ? "not-allowed" : "pointer",
-            fontWeight: "600",
           }}
         >
           {isBusy ? "Authenticating..." : "Admin Login"}

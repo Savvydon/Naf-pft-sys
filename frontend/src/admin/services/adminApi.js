@@ -1,4 +1,4 @@
-const API_BASE = "https://naf-pft-sys-1.onrender.com";
+const API_BASE = "https://naf-pft-sys-1.onrender.com"; // FIXED: No space
 
 const getToken = () => localStorage.getItem("pft_token");
 
@@ -46,7 +46,6 @@ export async function loginAdmin(credentials) {
     throw new Error(data.detail || `Login failed (status ${response.status})`);
   }
 
-  // Handle role - check if undefined, null, or missing
   const rawRole = data.role;
   console.log("[DEBUG] Raw role value:", rawRole, "Type:", typeof rawRole);
 
@@ -97,6 +96,34 @@ export async function getPersonnelById(id) {
   return response.json();
 }
 
+// ✅ CLIENT-SIDE SEARCH (avoids URL encoding issues)
+export async function searchPersonnel(svcNo) {
+  if (!svcNo?.trim()) return [];
+
+  const searchTerm = svcNo.trim();
+  console.log("[SEARCH] Client-side search for:", searchTerm);
+
+  // Get all records and filter
+  const allRecords = await getAllPersonnel();
+
+  // Flexible matching
+  const normalizedSearch = searchTerm.toUpperCase().replace(/\//g, "");
+
+  const filtered = allRecords.filter((record) => {
+    const recordSvcNo = (record.svc_no || "").toUpperCase();
+    const normalizedRecord = recordSvcNo.replace(/\//g, "");
+
+    return (
+      recordSvcNo === searchTerm.toUpperCase() ||
+      recordSvcNo.includes(searchTerm.toUpperCase()) ||
+      normalizedRecord === normalizedSearch
+    );
+  });
+
+  console.log("[SEARCH] Found", filtered.length, "of", allRecords.length);
+  return filtered;
+}
+
 export async function deletePersonnel(id) {
   const response = await fetch(`${API_BASE}/api/pft-results/${id}`, {
     method: "DELETE",
@@ -108,29 +135,6 @@ export async function deletePersonnel(id) {
   }
 
   return { success: true, message: "Record deleted" };
-}
-
-export async function searchPersonnel(svcNo) {
-  if (!svcNo?.trim()) return [];
-
-  const serviceNumber = svcNo.trim().toUpperCase();
-
-  const response = await fetch(
-    `${API_BASE}/api/pft-results/svc/${serviceNumber}`,
-    {
-      headers: getHeaders(true),
-    },
-  );
-
-  if (response.ok) {
-    return response.json();
-  }
-
-  if (response.status === 404) {
-    return [];
-  }
-
-  await handleError(response);
 }
 
 export async function updatePersonnel(id, updateData) {
