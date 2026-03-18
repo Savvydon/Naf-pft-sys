@@ -15,12 +15,15 @@ export default function PFTResultsList() {
 
   const fetchResults = async () => {
     try {
-      const res = await fetch("https://naf-pft-sys-1.onrender.com/superadmin/pft-results", {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
+      const res = await fetch(
+        "https://naf-pft-sys-1.onrender.com/superadmin/pft-results",
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+
       if (!res.ok) throw new Error("Failed to fetch results");
-      
+
       const data = await res.json();
       setResults(data);
     } catch (err) {
@@ -32,16 +35,19 @@ export default function PFTResultsList() {
 
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this result?")) return;
-    
+
     try {
-      const res = await fetch(`https://naf-pft-sys-1.onrender.com/superadmin/pft-results/${id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
+      const res = await fetch(
+        `https://naf-pft-sys-1.onrender.com/superadmin/pft-results/${id}`,
+        {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+
       if (!res.ok) throw new Error("Delete failed");
-      
-      setResults(results.filter(r => r.id !== id));
+
+      setResults(results.filter((r) => r.id !== id));
       alert("Result deleted successfully");
     } catch (err) {
       alert("Error: " + err.message);
@@ -58,7 +64,7 @@ export default function PFTResultsList() {
   return (
     <div className="superadmin-container">
       <h2>All PFT Results</h2>
-      
+
       <table className="data-table">
         <thead>
           <tr>
@@ -79,18 +85,37 @@ export default function PFTResultsList() {
               <td>{r.svc_no}</td>
               <td>{r.year}</td>
               <td>{r.grade}</td>
-              <td>{r.evaluator_name} ({r.evaluator_rank})</td>
+              <td>
+                {r.evaluator_name} ({r.evaluator_rank})
+              </td>
               <td className="actions">
-                <button onClick={() => viewDetails(r.id)} className="view-btn">View</button>
-                <button onClick={() => navigate(`/superadmin/pft-results/${r.id}/edit`)} className="edit-btn">Edit</button>
-                <button onClick={() => handleDelete(r.id)} className="delete-btn">Delete</button>
+                <button onClick={() => viewDetails(r.id)} className="view-btn">
+                  View
+                </button>
+                <button
+                  onClick={() =>
+                    navigate(`/superadmin/pft-results/${r.id}/edit`)
+                  }
+                  className="edit-btn"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() => handleDelete(r.id)}
+                  className="delete-btn"
+                >
+                  Delete
+                </button>
               </td>
             </tr>
           ))}
         </tbody>
       </table>
-      
-      <button onClick={() => navigate("/superadmin/dashboard")} className="back-btn">
+
+      <button
+        onClick={() => navigate("/superadmin/dashboard")}
+        className="back-btn"
+      >
         ← Back to Dashboard
       </button>
     </div>

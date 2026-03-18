@@ -318,8 +318,8 @@ export function usePhysicalFitness() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const ranks = [
-    "Air Man",
-    "Air Woman",
+    "Air CraftMan",
+    "Air Craftwoman",
     "Lance Corporal",
     "Corporal",
     "Sergeant",
@@ -327,7 +327,6 @@ export function usePhysicalFitness() {
     "Warrant Officer",
     "Master Warrant Officer",
     "Air Warrant Officer",
-    "Flying Officer",
     "Flight Lieutenant",
     "Squadron Leader",
     "Wing Commander",

@@ -8,7 +8,7 @@ export default function CreateAdmin() {
     full_name: "",
     rank: "",
     password: "",
-    confirm_password: ""
+    confirm_password: "",
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -16,12 +16,24 @@ export default function CreateAdmin() {
   const token = localStorage.getItem("pft_token");
 
   const ranks = [
-    "Air Man", "Air Woman", "Lance Corporal", "Corporal", "Sergeant",
-    "Flight Sergeant", "Warrant Officer", "Master Warrant Officer",
-    "Air Warrant Officer", "Flying Officer", "Flight Lieutenant",
-    "Squadron Leader", "Wing Commander", "Group Captain",
-    "Air Commodore", "Air Vice Marshal", "Vice Marshal",
-    "Air Chief Marshal", "Marshal of the Air Force",
+    "Air CraftMan",
+    "Air Craftwoman",
+    "Lance Corporal",
+    "Corporal",
+    "Sergeant",
+    "Flight Sergeant",
+    "Warrant Officer",
+    "Master Warrant Officer",
+    "Air Warrant Officer",
+    "Flight Lieutenant",
+    "Squadron Leader",
+    "Wing Commander",
+    "Group Captain",
+    "Air Commodore",
+    "Air Vice Marshal",
+    "Vice Marshal",
+    "Air Chief Marshal",
+    "Marshal of the Air Force",
   ];
 
   const handleChange = (e) => {
@@ -52,20 +64,23 @@ export default function CreateAdmin() {
     setLoading(true);
 
     try {
-      const res = await fetch("https://naf-pft-sys-1.onrender.com/superadmin/admins", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
+      const res = await fetch(
+        "https://naf-pft-sys-1.onrender.com/superadmin/admins",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            svc_no: formData.svc_no,
+            full_name: formData.full_name,
+            rank: formData.rank,
+            password: formData.password,
+            role: "admin",
+          }),
         },
-        body: JSON.stringify({
-          svc_no: formData.svc_no,
-          full_name: formData.full_name,
-          rank: formData.rank,
-          password: formData.password,
-          role: "admin"
-        })
-      });
+      );
 
       const data = await res.json();
 
@@ -85,10 +100,10 @@ export default function CreateAdmin() {
   return (
     <div className="superadmin-container">
       <h2>Create New Admin</h2>
-      
+
       <form onSubmit={handleSubmit} className="create-form">
         {error && <div className="error-message">{error}</div>}
-        
+
         <div className="form-group">
           <label>Service Number</label>
           <input
@@ -113,9 +128,18 @@ export default function CreateAdmin() {
 
         <div className="form-group">
           <label>Rank</label>
-          <select name="rank" value={formData.rank} onChange={handleChange} required>
+          <select
+            name="rank"
+            value={formData.rank}
+            onChange={handleChange}
+            required
+          >
             <option value="">Select Rank</option>
-            {ranks.map(r => <option key={r} value={r}>{r}</option>)}
+            {ranks.map((r) => (
+              <option key={r} value={r}>
+                {r}
+              </option>
+            ))}
           </select>
         </div>
 
@@ -142,7 +166,11 @@ export default function CreateAdmin() {
         </div>
 
         <div className="form-actions">
-          <button type="button" onClick={() => navigate("/superadmin/admins")} className="cancel-btn">
+          <button
+            type="button"
+            onClick={() => navigate("/superadmin/admins")}
+            className="cancel-btn"
+          >
             Cancel
           </button>
           <button type="submit" disabled={loading} className="submit-btn">

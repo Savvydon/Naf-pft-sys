@@ -5,20 +5,24 @@ import "../styles/PersonnelEdit.css";
 
 // Define ranks
 const RANKS = [
-  "Air Commodore",
-  "Group Captain",
-  "Wing Commander",
-  "Squadron Leader",
-  "Flight Lieutenant",
-  "Flying Officer",
-  "Pilot Officer",
-  "Master Warrant Officer",
-  "Warrant Officer",
-  "Flight Sergeant",
-  "Sergeant",
-  "Corporal",
+  "Air CraftMan",
+  "Air Craftwoman",
   "Lance Corporal",
-  "Aircraftman",
+  "Corporal",
+  "Sergeant",
+  "Flight Sergeant",
+  "Warrant Officer",
+  "Master Warrant Officer",
+  "Air Warrant Officer",
+  "Flight Lieutenant",
+  "Squadron Leader",
+  "Wing Commander",
+  "Group Captain",
+  "Air Commodore",
+  "Air Vice Marshal",
+  "Vice Marshal",
+  "Air Chief Marshal",
+  "Marshal of the Air Force",
 ];
 
 export default function PersonnelEdit({ fromSuperAdmin = false }) {

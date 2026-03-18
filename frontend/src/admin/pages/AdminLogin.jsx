@@ -16,8 +16,8 @@ export default function AdminLogin() {
   const navigate = useNavigate();
 
   const ranks = [
-    "Air Man",
-    "Air Woman",
+    "Air CraftMan",
+    "Air Craftwoman",
     "Lance Corporal",
     "Corporal",
     "Sergeant",
@@ -25,7 +25,6 @@ export default function AdminLogin() {
     "Warrant Officer",
     "Master Warrant Officer",
     "Air Warrant Officer",
-    "Flying Officer",
     "Flight Lieutenant",
     "Squadron Leader",
     "Wing Commander",
