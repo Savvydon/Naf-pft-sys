@@ -1,252 +1,296 @@
-/* ===== ADMIN LAYOUT ===== */
+/* ===================================== */
+/* BASE CONTAINER */
+/* ===================================== */
+
+.admin-container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* ===================================== */
+/* RESULTS SECTION */
+/* ===================================== */
+
+.results {
+  background: #fff;
+  padding: 1.5rem 2rem;
+  border-radius: 16px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+  border: 1px solid #ebedf2;
+}
+
+.results h2 {
+  text-align: center;
+  color: #0a3d62;
+  margin-bottom: 1.5rem;
+  border-bottom: 3px solid #27ae60;
+  padding-bottom: 10px;
+}
+
+.results h3 {
+  margin-top: 2rem;
+  border-left: 4px solid #27ae60;
+  padding-left: 10px;
+  color: #2c3e50;
+}
+
+.results p {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px;
+  border-radius: 6px;
+}
+
+.results p:hover {
+  background: #f7f9fc;
+}
+
+.results p b {
+  min-width: 150px;
+  color: #0a3d62;
+}
+
+/* ===================================== */
+/* GRID SECTIONS */
+/* ===================================== */
+
+.personal-info,
+.status-info {
+  display: grid;
+  gap: 10px 20px;
+  margin-bottom: 20px;
+}
+
+.personal-info {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.status-info {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+/* ===================================== */
+/* ACTION BUTTONS */
+/* ===================================== */
+
+.admin-actions-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid #ddd;
+}
+
+.admin-actions-container button {
+  padding: 10px 18px;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.admin-actions-container button:hover {
+  transform: translateY(-2px);
+}
+
+/* Button colors */
+.back-btn {
+  background: #6c757d;
+  color: #fff;
+}
+.edit-btn {
+  background: #1976d2;
+  color: #fff;
+}
+.delete-btn {
+  background: #c0392b;
+  color: #fff;
+}
+.pdf-btn {
+  background: #2e7d32;
+  color: #fff;
+}
+.email-btn {
+  background: #1976d2;
+  color: #fff;
+}
+
+/* ===================================== */
+/* STATES */
+/* ===================================== */
+
+.loading-text,
+.error,
+.not-found {
+  text-align: center;
+  padding: 40px;
+  font-size: 1.1rem;
+}
+
+.error {
+  color: #dc3545;
+}
+
+/* ===================================== */
+/* ADMIN LAYOUT */
+/* ===================================== */
 
 .admin-layout {
   display: flex;
   min-height: 100vh;
   background: #f4f6f9;
-  font-family: Arial, Helvetica, sans-serif;
 }
 
-/* ===== SIDEBAR ===== */
-
+/* SIDEBAR */
 .admin-sidebar {
-  width: 230px;
+  width: 240px;
   background: #0b3d91;
   color: white;
   padding: 20px;
 }
 
 .admin-sidebar h3 {
-  margin-bottom: 30px;
-  font-size: 20px;
+  margin-bottom: 20px;
 }
 
 .admin-sidebar nav {
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 10px;
 }
 
 .admin-sidebar a {
   color: white;
-  text-decoration: none;
   padding: 10px;
   border-radius: 5px;
-  transition: background 0.2s;
+  text-decoration: none;
 }
 
 .admin-sidebar a:hover {
   background: rgba(255, 255, 255, 0.2);
 }
 
-/* ===== CONTENT AREA ===== */
-
+/* CONTENT */
 .admin-content {
   flex: 1;
-  padding: 30px;
+  padding: 25px;
 }
 
-/* ===== HEADER ===== */
-
+/* HEADER */
 .admin-header {
   background: white;
-  padding: 15px 20px;
+  padding: 15px;
   border-radius: 6px;
   margin-bottom: 20px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
-.admin-header h2 {
-  margin: 0;
-}
-
-/* ===== SEARCH BAR ===== */
+/* ===================================== */
+/* SEARCH */
+/* ===================================== */
 
 .search-bar {
-  margin-bottom: 20px;
   display: flex;
   gap: 10px;
+  margin-bottom: 20px;
 }
 
 .search-bar input {
-  padding: 8px;
-  width: 250px;
+  flex: 1;
+  padding: 10px;
   border: 1px solid #ccc;
-  border-radius: 4px;
 }
 
 .search-bar button {
-  padding: 8px 14px;
   background: #0b3d91;
   color: white;
+  padding: 10px 16px;
   border: none;
-  border-radius: 4px;
-  cursor: pointer;
 }
 
-.search-bar button:hover {
-  background: #082d6b;
-}
-
-/* ===== TABLE ===== */
+/* ===================================== */
+/* TABLE */
+/* ===================================== */
 
 .personnel-table {
   width: 100%;
   border-collapse: collapse;
   background: white;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }
 
 .personnel-table th,
 .personnel-table td {
   padding: 12px;
   border-bottom: 1px solid #ddd;
-  text-align: left;
 }
 
 .personnel-table th {
   background: #f0f2f5;
 }
 
-.personnel-table tr:hover {
-  background: #f9f9f9;
+/* ACTION BUTTONS IN TABLE */
+.actions-cell {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
 }
 
-/* ===== BUTTONS ===== */
-
-
-/* ===== LOGIN PAGE ===== */
+/* ===================================== */
+/* LOGIN */
+/* ===================================== */
 
 .admin-login {
   display: flex;
-  flex-direction: column;
   justify-content: center;
   align-items: center;
   height: 100vh;
-}
-
-.admin-login h2 {
-  margin-bottom: 20px;
+  flex-direction: column;
 }
 
 .admin-login form {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  width: 250px;
+  width: 260px;
 }
 
 .admin-login input {
   padding: 10px;
   border: 1px solid #ccc;
-  border-radius: 4px;
 }
 
 .admin-login button {
+  background: #0b3d91;
+  color: white;
   padding: 10px;
-  background: #0b3d91;
   border: none;
-  color: white;
-  cursor: pointer;
-  border-radius: 4px;
 }
 
-.admin-login button:hover {
-  background: #082d6b;
-}
+/* ===================================== */
+/* DETAIL GRID */
+/* ===================================== */
 
-/* ===== PAGINATION ===== */
-
-.pagination {
-  margin-top: 20px;
-  display: flex;
-  gap: 10px;
-}
-
-.pagination button {
-  padding: 8px 12px;
-  border: none;
-  background: #0b3d91;
-  color: white;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.pagination button:hover {
-  background: #082d6b;
-}
-
-.actions-cell {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.view-btn {
-  background: #2e7d32; /* green */
-  color: white;
-  border: none;
-  padding: 6px 10px;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.view-btn:hover {
-  background: #1b5e20;
-}
-
-.edit-btn {
-  background: #1976d2; /* blue */
-  color: white;
-  border: none;
-  padding: 6px 10px;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.edit-btn:hover {
-  background: #0d47a1;
-}
-
-.delete-btn {
-  background: #c0392b;
-  color: white;
-  border: none;
-  padding: 6px 10px;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.delete-btn:hover {
-  background: #922b21;
-}
-
-
-/* Perdonal Details Styling*/
 .detail-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 16px;
-  margin: 24px 0;
 }
 
 .detail-grid div {
   background: white;
   padding: 12px;
   border-radius: 6px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
-.actions {
-  margin-top: 32px;
-  display: flex;
-  gap: 12px;
-}
 /* ===================================== */
-/* RESPONSIVE DESIGN */
+/* RESPONSIVE */
 /* ===================================== */
 
-/* Tablets */
+/* Tablet */
 @media (max-width: 1024px) {
   .admin-layout {
     flex-direction: column;
@@ -254,51 +298,43 @@
 
   .admin-sidebar {
     width: 100%;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
   }
 
   .admin-sidebar nav {
     flex-direction: row;
-    gap: 20px;
-  }
-
-  .admin-content {
-    padding: 20px;
+    flex-wrap: wrap;
   }
 }
 
-/* Mobile Devices */
+/* Mobile */
 @media (max-width: 768px) {
-  .admin-header h2 {
-    font-size: 18px;
+  .personal-info,
+  .status-info {
+    grid-template-columns: 1fr;
   }
 
   .search-bar {
     flex-direction: column;
-    align-items: stretch;
-  }
-
-  .search-bar input {
-    width: 100%;
   }
 
   .personnel-table {
     display: block;
     overflow-x: auto;
-    white-space: nowrap;
   }
 
-  .admin-content {
-    padding: 15px;
+  .admin-actions-container {
+    flex-direction: column;
+  }
+
+  .admin-actions-container button {
+    width: 100%;
   }
 }
 
-/* Small Phones */
+/* Small phones */
 @media (max-width: 480px) {
-  .admin-header h2 {
-    font-size: 16px;
+  .admin-content {
+    padding: 15px;
   }
 
   .admin-sidebar h3 {
@@ -306,11 +342,6 @@
   }
 
   .admin-sidebar a {
-    padding: 8px;
     font-size: 14px;
-  }
-
-  .admin-login form {
-    width: 90%;
   }
 }
