@@ -14,44 +14,74 @@ def recompute_and_update_pft_result(
     Recomputes all derived fields based on current record values
     (after partial updates have already been applied).
     
-    Returns the refreshed record.
+    Includes debug logging to help diagnose why BMI/ideal weight go wrong.
     """
+    print("\n" + "="*60)
+    print("[RECOMPUTE START] Record ID:", record.id)
+    print("Current DB values BEFORE any changes:")
+    print(f"  height           : {record.height} (type: {type(record.height)})")
+    print(f"  weight_current   : {record.weight_current} (type: {type(record.weight_current)})")
+    print(f"  age              : {record.age}")
+    print(f"  sex              : {record.sex}")
+    print(f"  cardio_cage      : {record.cardio_cage}")
+    print("="*60)
+
+    # Apply partial update if provided (usually not needed here)
     if partial_update:
-        # Apply any last-minute changes before recomputing
+        print("[PARTIAL UPDATE APPLIED]:", partial_update)
         for key, value in partial_update.items():
             if hasattr(record, key) and value is not None:
+                print(f"  Setting {key} = {value}")
                 setattr(record, key, value)
 
-    # Build input dict exactly like the original compute endpoint expects
+    # Build input exactly like /api/compute expects
     input_data = {
         "year": record.year,
-        "full_name": record.full_name,
-        "rank": record.rank,
-        "svc_no": record.svc_no,
-        "unit": record.unit,
-        "appointment": record.appointment,
+        "full_name": record.full_name or "",
+        "rank": record.rank or "",
+        "svc_no": record.svc_no or "",
+        "unit": record.unit or "",
+        "appointment": record.appointment or "",
         "date": record.date or "",
-        "age": record.age,
-        "sex": record.sex.lower() if record.sex else "male",
-        "height": record.height or 0.0,
-        "weight": record.weight_current or 0.0,
-        "cardio_cage": record.cardio_cage or 0,
-        "step_up": record.step_up_value or 0,
-        "push_up": record.push_up_value or 0,
-        "sit_up": record.sit_up_value or 0,
-        "chin_up": record.chin_up_value or 0,
-        "sit_reach": record.sit_reach_value or 0.0,
-        # evaluator fields are kept as-is (not changed by admin)
-        "evaluator_name": record.evaluator_name,
-        "evaluator_rank": record.evaluator_rank,
+        "age": int(record.age) if record.age is not None else 0,
+        "sex": str(record.sex).lower().strip() if record.sex else "male",
+        "height": float(record.height) if record.height is not None else 0.0,
+        "weight": float(record.weight_current) if record.weight_current is not None else 0.0,
+        "cardio_cage": int(record.cardio_cage) if record.cardio_cage is not None else 0,
+        "step_up": int(record.step_up_value) if record.step_up_value is not None else 0,
+        "push_up": int(record.push_up_value) if record.push_up_value is not None else 0,
+        "sit_up": int(record.sit_up_value) if record.sit_up_value is not None else 0,
+        "chin_up": int(record.chin_up_value) if record.chin_up_value is not None else 0,
+        "sit_reach": float(record.sit_reach_value) if record.sit_reach_value is not None else 0.0,
+        "evaluator_name": record.evaluator_name or "",
+        "evaluator_rank": record.evaluator_rank or "",
     }
 
-    result = compute_naf_pft(input_data)
+    print("\n[INPUT DATA sent to compute_naf_pft]:")
+    for k, v in sorted(input_data.items()):
+        print(f"  {k:18}: {v} ({type(v).__name__})")
 
-    if "error" in result:
-        raise ValueError(f"Recompute failed: {result['error']}")
+    try:
+        result = compute_naf_pft(input_data)
+        print("\n[COMPUTE RESULT returned]:")
+        print("  bmi_current      :", result.get("bmi_current"))
+        print("  bmi_status       :", result.get("bmi_status"))
+        print("  weight_ideal     :", result.get("weight_ideal"))
+        print("  aggregate        :", result.get("aggregate"))
+        print("  grade            :", result.get("grade"))
+        print("  Full result keys :", list(result.keys()))
 
-    # List of fields we allow to be overwritten by recomputation
+        if "error" in result:
+            print("[COMPUTE ERROR]:", result["error"])
+            raise ValueError(f"Recompute failed: {result['error']}")
+
+    except Exception as e:
+        print("[CRITICAL RECOMPUTE EXCEPTION]:", str(e))
+        import traceback
+        traceback.print_exc()
+        raise
+
+    # Fields we allow to be overwritten
     recomputable_fields = {
         "bmi_current", "bmi_status", "bmi_ideal", "bmi_excess", "bmi_deficit", "bmi_points",
         "weight_ideal", "weight_excess", "weight_deficit", "weight_status",
@@ -65,15 +95,32 @@ def recompute_and_update_pft_result(
         "prescription_duration", "prescription_days", "recommended_activity",
     }
 
+    updated_count = 0
     for field in recomputable_fields:
         if field in result and hasattr(record, field):
-            setattr(record, field, result[field])
+            old_value = getattr(record, field)
+            new_value = result[field]
+            if old_value != new_value:
+                print(f"[UPDATED] {field:18}: {old_value} → {new_value}")
+                setattr(record, field, new_value)
+                updated_count += 1
+            else:
+                print(f"[UNCHANGED] {field:18}: {new_value}")
 
-    db.add(record)           # in case it was detached
+    print(f"\n[RECOMPUTE SUMMARY] {updated_count} fields updated")
+
+    db.add(record)
     db.commit()
     db.refresh(record)
 
+    print("[RECOMPUTE FINISH] Record refreshed from DB")
+    print(f"  Final height     : {record.height}")
+    print(f"  Final BMI        : {record.bmi_current}")
+    print(f"  Final ideal weight: {record.weight_ideal}")
+    print("="*60 + "\n")
+
     return record
+
 
 # # backend/app/services/pft_utils.py
 # from typing import Dict
