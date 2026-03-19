@@ -5,9 +5,9 @@ from sqlalchemy import func
 from app.services.database import get_db
 from app.services.models import User, PFTResult
 from app.services.auth import require_super_admin, get_password_hash
+from app.services.naf_pft import compute_naf_pft
 from pydantic import BaseModel
 from typing import List, Optional
-from app.services.pft_computation import recompute_and_update_pft_result
 
 router = APIRouter(prefix="/superadmin", tags=["superadmin"])
 
@@ -58,7 +58,7 @@ def user_to_dict(user: User) -> dict:
 def superadmin_login(credentials: dict, db: Session = Depends(get_db)):
     """
     Static login for super admin only.
-    Credentials: NAF09/23345 / Super-Admin2026!
+    Credentials: NAF09/22119 / Super-Admin-2026
     """
     svc_no = credentials.get("svc_no", "").strip().upper()
     password = credentials.get("password", "")
@@ -310,7 +310,7 @@ def get_pft_result(
         raise HTTPException(404, "Result not found")
     return result
 
-# ---------- UPDATE PFT RESULT (with recompute) ----------
+# ---------- UPDATE PFT RESULT ----------
 @router.put("/pft-results/{result_id}")
 def update_pft_result(
     result_id: int,
@@ -318,33 +318,120 @@ def update_pft_result(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_super_admin)
 ):
+    """SuperAdmin only: Update PFT result and recompute derived values"""
     result = db.query(PFTResult).filter(PFTResult.id == result_id).first()
     if not result:
         raise HTTPException(404, "Result not found")
     
-    # Protect evaluator fields
-    protected = {"evaluator_name", "evaluator_rank"}
-    for field in protected:
-        update_data.pop(field, None)
+    # Prevent changing evaluator info via update
+    update_data.pop('evaluator_name', None)
+    update_data.pop('evaluator_rank', None)
     
     # Apply updates
     for key, value in update_data.items():
         if hasattr(result, key):
             setattr(result, key, value)
     
-    # Recompute derived fields
-    try:
-        updated = recompute_and_update_pft_result(result, db)
-    except ValueError as e:
-        db.rollback()
-        raise HTTPException(400, str(e))
-    
-    return {
-        "id": updated.id,
-        "message": "PFT result updated and recomputed successfully",
-        "changed_fields": list(update_data.keys()),
-        "recomputed": True
+    # Check if any computation-relevant fields were changed
+    computation_fields = {
+        'age', 'sex', 'height', 'weight_current', 'cardio_cage', 
+        'step_up_value', 'push_up_value', 'sit_up_value', 'chin_up_value', 'sit_reach_value',
+        'step_up', 'push_up', 'sit_up', 'chin_up', 'sit_reach', 'weight'
     }
+    
+    if computation_fields.intersection(update_data.keys()):
+        # Build input data for computation from updated record
+        compute_input = {
+            'year': result.year,
+            'full_name': result.full_name,
+            'rank': result.rank,
+            'svc_no': result.svc_no,
+            'unit': result.unit,
+            'appointment': result.appointment,
+            'email': result.email,
+            'date': result.date,
+            'age': result.age,
+            'sex': result.sex,
+            'height': result.height,
+            'weight': result.weight_current,
+            'cardio_cage': result.cardio_cage,
+            'step_up': result.step_up_value,
+            'push_up': result.push_up_value,
+            'sit_up': result.sit_up_value,
+            'chin_up': result.chin_up_value,
+            'sit_reach': result.sit_reach_value,
+            'evaluator_name': result.evaluator_name,
+            'evaluator_rank': result.evaluator_rank,
+        }
+        
+        # Re-run the computation
+        new_result = compute_naf_pft(compute_input)
+        
+        if "error" in new_result:
+            raise HTTPException(400, f"Computation error: {new_result['error']}")
+        
+        # Update all computed fields in the record
+        computed_mappings = {
+            'weight_ideal': new_result['weight_ideal'],
+            'weight_excess': new_result['weight_excess'],
+            'weight_deficit': new_result['weight_deficit'],
+            'weight_status': new_result['weight_status'],
+            'bmi_current': new_result['bmi_current'],
+            'bmi_ideal': new_result['bmi_ideal'],
+            'bmi_excess': new_result['bmi_excess'],
+            'bmi_deficit': new_result['bmi_deficit'],
+            'bmi_status': new_result['bmi_status'],
+            'bmi_points': new_result['bmi_points'],
+            'cardio_type': new_result['cardio_type'],
+            'cardio_value': new_result['cardio_value'],
+            'cardio_ideal': new_result['cardio_ideal'],
+            'cardio_status': new_result['cardio_status'],
+            'cardio_points': new_result['cardio_points'],
+            'step_up_value': new_result['step_up_value'],
+            'step_up_ideal': new_result['step_up_ideal'],
+            'step_up_status': new_result['step_up_status'],
+            'step_up_points': new_result['step_up_points'],
+            'push_up_value': new_result['push_up_value'],
+            'push_up_ideal': new_result['push_up_ideal'],
+            'push_up_status': new_result['push_up_status'],
+            'push_up_points': new_result['push_up_points'],
+            'sit_up_value': new_result['sit_up_value'],
+            'sit_up_ideal': new_result['sit_up_ideal'],
+            'sit_up_status': new_result['sit_up_status'],
+            'sit_up_points': new_result['sit_up_points'],
+            'chin_up_value': new_result['chin_up_value'],
+            'chin_up_ideal': new_result['chin_up_ideal'],
+            'chin_up_status': new_result['chin_up_status'],
+            'chin_up_points': new_result['chin_up_points'],
+            'sit_reach_value': new_result['sit_reach_value'],
+            'sit_reach_ideal': new_result['sit_reach_ideal'],
+            'sit_reach_status': new_result['sit_reach_status'],
+            'sit_reach_points': new_result['sit_reach_points'],
+            'aggregate': new_result['aggregate'],
+            'grade': new_result['grade'],
+            'prescription_duration': new_result['prescription_duration'],
+            'prescription_days': new_result['prescription_days'],
+            'recommended_activity': new_result['recommended_activity'],
+        }
+        
+        for key, value in computed_mappings.items():
+            if hasattr(result, key):
+                setattr(result, key, value)
+    
+    db.commit()
+    db.refresh(result)
+    
+    # Convert to dict for response
+    result_dict = {
+        c.name: getattr(result, c.name)
+        for c in result.__table__.columns
+    }
+    if result_dict.get('created_at'):
+        result_dict['created_at'] = result_dict['created_at'].isoformat()
+    if result_dict.get('updated_at'):
+        result_dict['updated_at'] = result_dict['updated_at'].isoformat()
+    
+    return result_dict
 
 # ---------- DELETE PFT RESULT ----------
 @router.delete("/pft-results/{result_id}")

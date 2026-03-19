@@ -6,7 +6,7 @@ from app.schemas import InputSchema, PFTUpdate
 from app.services.database import get_db
 from app.services.models import PFTResult, User
 from app.services.auth import get_current_user, require_admin, require_evaluator
-from app.services.pft_computation import recompute_and_update_pft_result
+from app.services.naf_pft import compute_naf_pft
 
 router = APIRouter(prefix="/api", tags=["PFT Results"])
 
@@ -159,7 +159,7 @@ async def get_pft_results_by_svc_no(
     ]
 
 
-# UPDATE RESULT - ADMIN ONLY (with recompute)
+# UPDATE RESULT - ADMIN ONLY
 @router.put("/pft-results/{result_id}", response_model=dict)
 async def update_pft_result(
     result_id: int,
@@ -167,7 +167,7 @@ async def update_pft_result(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin)
 ):
-    """Admin only: Update PFT result → apply changes → recompute derived fields"""
+    """Admin only: Update PFT result and recompute derived values"""
     stmt = select(PFTResult).where(PFTResult.id == result_id)
     record = db.execute(stmt).scalars().first()
 
@@ -177,27 +177,111 @@ async def update_pft_result(
     update_dict = update_data.model_dump(exclude_unset=True)
     
     # Prevent changing evaluator info via update
-    protected = {"evaluator_name", "evaluator_rank"}
-    for field in protected:
-        update_dict.pop(field, None)
+    update_dict.pop('evaluator_name', None)
+    update_dict.pop('evaluator_rank', None)
     
-    # Apply the raw input changes
+    # Apply the raw updates first
     for key, value in update_dict.items():
         if hasattr(record, key):
             setattr(record, key, value)
     
-    # Recompute everything that depends on the changed values
-    try:
-        updated_record = recompute_and_update_pft_result(record, db)
-    except ValueError as e:
-        db.rollback()
-        raise HTTPException(status_code=400, detail=str(e))
+    # Check if any computation-relevant fields were changed
+    computation_fields = {
+        'age', 'sex', 'height', 'weight', 'cardio_cage', 
+        'step_up', 'push_up', 'sit_up', 'chin_up', 'sit_reach'
+    }
+    
+    if computation_fields.intersection(update_dict.keys()):
+        # Build input data for computation from updated record
+        compute_input = {
+            'year': record.year,
+            'full_name': record.full_name,
+            'rank': record.rank,
+            'svc_no': record.svc_no,
+            'unit': record.unit,
+            'appointment': record.appointment,
+            'email': record.email,
+            'date': record.date,
+            'age': record.age,
+            'sex': record.sex,
+            'height': record.height,
+            'weight': record.weight_current,
+            'cardio_cage': record.cardio_cage,
+            'step_up': record.step_up_value,
+            'push_up': record.push_up_value,
+            'sit_up': record.sit_up_value,
+            'chin_up': record.chin_up_value,
+            'sit_reach': record.sit_reach_value,
+            'evaluator_name': record.evaluator_name,
+            'evaluator_rank': record.evaluator_rank,
+        }
+        
+        # Re-run the computation
+        new_result = compute_naf_pft(compute_input)
+        
+        if "error" in new_result:
+            raise HTTPException(400, f"Computation error: {new_result['error']}")
+        
+        # Update all computed fields in the record
+        computed_mappings = {
+            'weight_ideal': new_result['weight_ideal'],
+            'weight_excess': new_result['weight_excess'],
+            'weight_deficit': new_result['weight_deficit'],
+            'weight_status': new_result['weight_status'],
+            'bmi_current': new_result['bmi_current'],
+            'bmi_ideal': new_result['bmi_ideal'],
+            'bmi_excess': new_result['bmi_excess'],
+            'bmi_deficit': new_result['bmi_deficit'],
+            'bmi_status': new_result['bmi_status'],
+            'bmi_points': new_result['bmi_points'],
+            'cardio_type': new_result['cardio_type'],
+            'cardio_value': new_result['cardio_value'],
+            'cardio_ideal': new_result['cardio_ideal'],
+            'cardio_status': new_result['cardio_status'],
+            'cardio_points': new_result['cardio_points'],
+            'step_up_value': new_result['step_up_value'],
+            'step_up_ideal': new_result['step_up_ideal'],
+            'step_up_status': new_result['step_up_status'],
+            'step_up_points': new_result['step_up_points'],
+            'push_up_value': new_result['push_up_value'],
+            'push_up_ideal': new_result['push_up_ideal'],
+            'push_up_status': new_result['push_up_status'],
+            'push_up_points': new_result['push_up_points'],
+            'sit_up_value': new_result['sit_up_value'],
+            'sit_up_ideal': new_result['sit_up_ideal'],
+            'sit_up_status': new_result['sit_up_status'],
+            'sit_up_points': new_result['sit_up_points'],
+            'chin_up_value': new_result['chin_up_value'],
+            'chin_up_ideal': new_result['chin_up_ideal'],
+            'chin_up_status': new_result['chin_up_status'],
+            'chin_up_points': new_result['chin_up_points'],
+            'sit_reach_value': new_result['sit_reach_value'],
+            'sit_reach_ideal': new_result['sit_reach_ideal'],
+            'sit_reach_status': new_result['sit_reach_status'],
+            'sit_reach_points': new_result['sit_reach_points'],
+            'aggregate': new_result['aggregate'],
+            'grade': new_result['grade'],
+            'prescription_duration': new_result['prescription_duration'],
+            'prescription_days': new_result['prescription_days'],
+            'recommended_activity': new_result['recommended_activity'],
+        }
+        
+        for key, value in computed_mappings.items():
+            if hasattr(record, key):
+                setattr(record, key, value)
+    
+    db.commit()
+    db.refresh(record)
 
     return {
-        "id": updated_record.id,
+        "id": record.id,
+        "year": record.year,
+        "svc_no": record.svc_no,
+        "full_name": record.full_name,
+        "rank": record.rank,
+        "updated_fields": list(update_dict.keys()),
+        "recomputed": bool(computation_fields.intersection(update_dict.keys())),
         "message": "PFT result updated and recomputed successfully",
-        "changed_fields": list(update_dict.keys()),
-        "recomputed": True
     }
 
 
