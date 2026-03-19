@@ -1,19 +1,14 @@
-# backend/app/routes/fitness.py
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 from typing import List
-
 from app.schemas import InputSchema, PFTUpdate
 from app.services.database import get_db
 from app.services.models import PFTResult, User
 from app.services.auth import get_current_user, require_admin, require_evaluator
-
-# Import the new utilities for recomputation
-from app.services.pft_utils import recompute_pft_from_record, apply_computed_fields_to_record
+from app.services.pft_computation import recompute_and_update_pft_result
 
 router = APIRouter(prefix="/api", tags=["PFT Results"])
-
 
 # GET ALL RESULTS - ADMIN ONLY
 @router.get("/pft-results", response_model=List[dict])
@@ -57,7 +52,7 @@ async def get_all_pft_results(
                 "cardio_ideal": r.cardio_ideal,
                 "cardio_status": r.cardio_status,
                 "cardio_points": r.cardio_points,
-                "step_up_value": r.step_up_value,
+                "step_up_value": r.step_up_value,                
                 "step_up_ideal": r.step_up_ideal,
                 "step_up_status": r.step_up_status,
                 "step_up_points": r.step_up_points,
@@ -81,7 +76,7 @@ async def get_all_pft_results(
                 "grade": r.grade,
                 "prescription_duration": r.prescription_duration,
                 "prescription_days": r.prescription_days,
-                "recommended_activity": r.recommended_activity,
+                "recommended_activity": r.recommended_activity,                            
                 "evaluator_name": r.evaluator_name,
                 "evaluator_rank": r.evaluator_rank,
                 "created_at": r.created_at.isoformat() if r.created_at else None,
@@ -119,7 +114,7 @@ async def get_pft_result_by_id(
         result_dict['created_at'] = result_dict['created_at'].isoformat()
     if result_dict.get('updated_at'):
         result_dict['updated_at'] = result_dict['updated_at'].isoformat()
-
+    
     return result_dict
 
 
@@ -164,7 +159,7 @@ async def get_pft_results_by_svc_no(
     ]
 
 
-# UPDATE RESULT - ADMIN ONLY (WITH RECOMPUTATION)
+# UPDATE RESULT - ADMIN ONLY (with recompute)
 @router.put("/pft-results/{result_id}", response_model=dict)
 async def update_pft_result(
     result_id: int,
@@ -172,57 +167,37 @@ async def update_pft_result(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_admin)
 ):
-    """Admin only: Update PFT result and recompute all derived scores"""
+    """Admin only: Update PFT result → apply changes → recompute derived fields"""
     stmt = select(PFTResult).where(PFTResult.id == result_id)
     record = db.execute(stmt).scalars().first()
 
     if not record:
         raise HTTPException(status_code=404, detail="PFT result not found")
-
-    # 1. Apply only the fields the admin actually sent
+    
     update_dict = update_data.model_dump(exclude_unset=True)
-
-    # Protect evaluator info from being overwritten
-    update_dict.pop('evaluator_name', None)
-    update_dict.pop('evaluator_rank', None)
-
-    updated_fields = []
+    
+    # Prevent changing evaluator info via update
+    protected = {"evaluator_name", "evaluator_rank"}
+    for field in protected:
+        update_dict.pop(field, None)
+    
+    # Apply the raw input changes
     for key, value in update_dict.items():
         if hasattr(record, key):
             setattr(record, key, value)
-            updated_fields.append(key)
-
-    # 2. Recompute all derived fields based on current (updated) record values
+    
+    # Recompute everything that depends on the changed values
     try:
-        recomputed = recompute_pft_from_record(record)
-        apply_computed_fields_to_record(record, recomputed)
-
-        db.commit()
-        db.refresh(record)
-
-    except ValueError as ve:
+        updated_record = recompute_and_update_pft_result(record, db)
+    except ValueError as e:
         db.rollback()
-        raise HTTPException(status_code=400, detail=str(ve))
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to recompute and save updated PFT: {str(e)}"
-        )
+        raise HTTPException(status_code=400, detail=str(e))
 
-    # 3. Return confirmation with some key updated values
     return {
-        "id": record.id,
-        "svc_no": record.svc_no,
-        "full_name": record.full_name,
-        "year": record.year,
-        "message": "PFT result updated and all scores recomputed successfully",
-        "updated_input_fields": updated_fields,
-        "new_height": record.height,
-        "new_weight": record.weight_current,
-        "new_bmi": record.bmi_current,
-        "new_aggregate": record.aggregate,
-        "new_grade": record.grade,
+        "id": updated_record.id,
+        "message": "PFT result updated and recomputed successfully",
+        "changed_fields": list(update_dict.keys()),
+        "recomputed": True
     }
 
 
@@ -239,77 +214,27 @@ async def delete_pft_result(
 
     if not record:
         raise HTTPException(status_code=404, detail="PFT result not found")
-
+    
     db.delete(record)
     db.commit()
     return {"message": f"PFT result {result_id} deleted successfully"}
 
-
-# COMPUTE NEW PFT - EVALUATOR ONLY
-# (This endpoint was in main.py earlier — moved here for better organization if desired)
-@router.post("/compute")
-def compute_pft(
-    data: InputSchema,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(require_evaluator)
-):
-    """Evaluators only: Compute and save new PFT results"""
-    if not (2000 <= data.year <= 2100):
-        raise HTTPException(422, "Year must be between 2000 and 2100")
-
-    data_dict = data.model_dump()
-    svc_no = data_dict.get("svc_no", "").strip()
-
-    if "/" in svc_no:
-        svc_no = "/".join(part.strip() for part in svc_no.split("/"))
-    if not svc_no.startswith("NAF"):
-        svc_no = "NAF/" + svc_no.lstrip("/")
-
-    data_dict["svc_no"] = svc_no
-    data_dict["evaluator_name"] = current_user.full_name
-    data_dict["evaluator_rank"] = current_user.rank
-
-    from app.services.naf_pft import compute_naf_pft   # assuming this is where compute_naf_pft lives
-
-    result = compute_naf_pft(data_dict)
-
-    if "error" in result:
-        raise HTTPException(400, result["error"])
-
-    db_data = {
-        k: v
-        for k, v in result.items()
-        if hasattr(PFTResult, k) and v is not None
-    }
-
-    try:
-        db_result = PFTResult(**db_data)
-        db.add(db_result)
-        db.commit()
-        db.refresh(db_result)
-
-        return {
-            **result,
-            "id": db_result.id,
-            "evaluator_name": db_result.evaluator_name,
-            "evaluator_rank": db_result.evaluator_rank,
-            "message": "PFT result computed and saved successfully",
-        }
-
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(500, f"Database save failed: {str(e)}")
-
+# # backend/app/routes/fitness.py
 # from fastapi import APIRouter, Depends, HTTPException, status
 # from sqlalchemy.orm import Session
 # from sqlalchemy import select
 # from typing import List
+
 # from app.schemas import InputSchema, PFTUpdate
 # from app.services.database import get_db
 # from app.services.models import PFTResult, User
 # from app.services.auth import get_current_user, require_admin, require_evaluator
 
+# # Import the new utilities for recomputation
+# from app.services.pft_utils import recompute_pft_from_record, apply_computed_fields_to_record
+
 # router = APIRouter(prefix="/api", tags=["PFT Results"])
+
 
 # # GET ALL RESULTS - ADMIN ONLY
 # @router.get("/pft-results", response_model=List[dict])
@@ -353,7 +278,7 @@ def compute_pft(
 #                 "cardio_ideal": r.cardio_ideal,
 #                 "cardio_status": r.cardio_status,
 #                 "cardio_points": r.cardio_points,
-#                 "step_up_value": r.step_up_value,                
+#                 "step_up_value": r.step_up_value,
 #                 "step_up_ideal": r.step_up_ideal,
 #                 "step_up_status": r.step_up_status,
 #                 "step_up_points": r.step_up_points,
@@ -377,7 +302,7 @@ def compute_pft(
 #                 "grade": r.grade,
 #                 "prescription_duration": r.prescription_duration,
 #                 "prescription_days": r.prescription_days,
-#                 "recommended_activity": r.recommended_activity,                            
+#                 "recommended_activity": r.recommended_activity,
 #                 "evaluator_name": r.evaluator_name,
 #                 "evaluator_rank": r.evaluator_rank,
 #                 "created_at": r.created_at.isoformat() if r.created_at else None,
@@ -415,7 +340,7 @@ def compute_pft(
 #         result_dict['created_at'] = result_dict['created_at'].isoformat()
 #     if result_dict.get('updated_at'):
 #         result_dict['updated_at'] = result_dict['updated_at'].isoformat()
-    
+
 #     return result_dict
 
 
@@ -460,7 +385,7 @@ def compute_pft(
 #     ]
 
 
-# # UPDATE RESULT - ADMIN ONLY
+# # UPDATE RESULT - ADMIN ONLY (WITH RECOMPUTATION)
 # @router.put("/pft-results/{result_id}", response_model=dict)
 # async def update_pft_result(
 #     result_id: int,
@@ -468,34 +393,57 @@ def compute_pft(
 #     db: Session = Depends(get_db),
 #     current_user: User = Depends(require_admin)
 # ):
-#     """Admin only: Update PFT result"""
+#     """Admin only: Update PFT result and recompute all derived scores"""
 #     stmt = select(PFTResult).where(PFTResult.id == result_id)
 #     record = db.execute(stmt).scalars().first()
 
 #     if not record:
 #         raise HTTPException(status_code=404, detail="PFT result not found")
-    
+
+#     # 1. Apply only the fields the admin actually sent
 #     update_dict = update_data.model_dump(exclude_unset=True)
-    
-#     # Prevent changing evaluator info via update
+
+#     # Protect evaluator info from being overwritten
 #     update_dict.pop('evaluator_name', None)
 #     update_dict.pop('evaluator_rank', None)
-    
+
+#     updated_fields = []
 #     for key, value in update_dict.items():
 #         if hasattr(record, key):
 #             setattr(record, key, value)
-    
-#     db.commit()
-#     db.refresh(record)
+#             updated_fields.append(key)
 
+#     # 2. Recompute all derived fields based on current (updated) record values
+#     try:
+#         recomputed = recompute_pft_from_record(record)
+#         apply_computed_fields_to_record(record, recomputed)
+
+#         db.commit()
+#         db.refresh(record)
+
+#     except ValueError as ve:
+#         db.rollback()
+#         raise HTTPException(status_code=400, detail=str(ve))
+#     except Exception as e:
+#         db.rollback()
+#         raise HTTPException(
+#             status_code=500,
+#             detail=f"Failed to recompute and save updated PFT: {str(e)}"
+#         )
+
+#     # 3. Return confirmation with some key updated values
 #     return {
 #         "id": record.id,
-#         "year": record.year,
 #         "svc_no": record.svc_no,
 #         "full_name": record.full_name,
-#         "rank": record.rank,
-#         "updated_fields": list(update_dict.keys()),
-#         "message": "PFT result updated successfully",
+#         "year": record.year,
+#         "message": "PFT result updated and all scores recomputed successfully",
+#         "updated_input_fields": updated_fields,
+#         "new_height": record.height,
+#         "new_weight": record.weight_current,
+#         "new_bmi": record.bmi_current,
+#         "new_aggregate": record.aggregate,
+#         "new_grade": record.grade,
 #     }
 
 
@@ -512,7 +460,63 @@ def compute_pft(
 
 #     if not record:
 #         raise HTTPException(status_code=404, detail="PFT result not found")
-    
+
 #     db.delete(record)
 #     db.commit()
 #     return {"message": f"PFT result {result_id} deleted successfully"}
+
+
+# # COMPUTE NEW PFT - EVALUATOR ONLY
+# # (This endpoint was in main.py earlier — moved here for better organization if desired)
+# @router.post("/compute")
+# def compute_pft(
+#     data: InputSchema,
+#     db: Session = Depends(get_db),
+#     current_user: User = Depends(require_evaluator)
+# ):
+#     """Evaluators only: Compute and save new PFT results"""
+#     if not (2000 <= data.year <= 2100):
+#         raise HTTPException(422, "Year must be between 2000 and 2100")
+
+#     data_dict = data.model_dump()
+#     svc_no = data_dict.get("svc_no", "").strip()
+
+#     if "/" in svc_no:
+#         svc_no = "/".join(part.strip() for part in svc_no.split("/"))
+#     if not svc_no.startswith("NAF"):
+#         svc_no = "NAF/" + svc_no.lstrip("/")
+
+#     data_dict["svc_no"] = svc_no
+#     data_dict["evaluator_name"] = current_user.full_name
+#     data_dict["evaluator_rank"] = current_user.rank
+
+#     from app.services.naf_pft import compute_naf_pft   # assuming this is where compute_naf_pft lives
+
+#     result = compute_naf_pft(data_dict)
+
+#     if "error" in result:
+#         raise HTTPException(400, result["error"])
+
+#     db_data = {
+#         k: v
+#         for k, v in result.items()
+#         if hasattr(PFTResult, k) and v is not None
+#     }
+
+#     try:
+#         db_result = PFTResult(**db_data)
+#         db.add(db_result)
+#         db.commit()
+#         db.refresh(db_result)
+
+#         return {
+#             **result,
+#             "id": db_result.id,
+#             "evaluator_name": db_result.evaluator_name,
+#             "evaluator_rank": db_result.evaluator_rank,
+#             "message": "PFT result computed and saved successfully",
+#         }
+
+#     except Exception as e:
+#         db.rollback()
+#         raise HTTPException(500, f"Database save failed: {str(e)}")
