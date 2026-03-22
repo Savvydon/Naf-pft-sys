@@ -17,7 +17,7 @@ SCORING: Dict = {
                            (107.1, 117.0, 7), (117.1, 130.0, 6), (130.1, float('inf'), 1)],
                 "ideal": 105,
                 "optimum": 115,
-                "type": "Higher is better"
+                "type": "Lower is better"
             },
             "push_up_1min": {
                 "ranges": [(50.0, float('inf'), 10), (40.0, 49.0, 8), (30.0, 39.0, 6),
@@ -66,7 +66,7 @@ SCORING: Dict = {
                            (107.1, 117.0, 7), (117.1, 130.0, 6), (130.1, float('inf'), 1)],
                 "ideal": 115,
                 "optimum": 125,
-                "type": "Higher is better"
+                "type": "Lower is better"
             },
             "push_up_1min": {  # same as <29
                 "ranges": [(50.0, float('inf'), 10), (40.0, 49.0, 8), (30.0, 39.0, 6),
@@ -115,7 +115,7 @@ SCORING: Dict = {
                            (107.1, 117.0, 7), (117.1, 130.0, 6), (130.1, float('inf'), 1)],
                 "ideal": 130,
                 "optimum": 140,
-                "type": "Higher is better"
+                "type": "Lower is better"
             },
             "push_up_1min": {
                 "ranges": [(45.0, float('inf'), 10), (40.0, 44.0, 8), (30.0, 39.0, 6),
@@ -164,7 +164,7 @@ SCORING: Dict = {
                            (108.0, 117.0, 7), (118.0, 130.0, 6), (130.001, float('inf'), 1)],
                 "ideal": 135,
                 "optimum": 145,
-                "type": "Higher is better"
+                "type": "Lower is better"
             },
             "push_up_1min": {
                 "ranges": [(40.0, float('inf'), 10), (21.0, 39.0, 8), (11.0, 20.0, 6),
@@ -213,7 +213,7 @@ SCORING: Dict = {
                            (108.0, 117.0, 7), (118.0, 130.0, 6), (130.001, float('inf'), 1)],
                 "ideal": 140,
                 "optimum": 140,
-                "type": "Higher is better"
+                "type": "Lower is better"
             },
             "push_up_1min": {
                 "ranges": [(39.0, float('inf'), 10), (30.0, 38.0, 8), (20.0, 28.0, 6),
@@ -264,7 +264,7 @@ SCORING: Dict = {
                            (119.0, 128.0, 7), (129.0, 140.0, 6), (140.001, float('inf'), 1)],
                 "ideal": 120,
                 "optimum": 130,
-                "type": "Higher is better"
+                "type": "Lower is better"
             },
             "push_up_1min": {  # same as male <29
                 "ranges": [(50.0, float('inf'), 10), (40.0, 49.0, 8), (30.0, 39.0, 6),
@@ -313,7 +313,7 @@ SCORING: Dict = {
                            (119.0, 128.0, 7), (129.0, 140.0, 6), (140.001, float('inf'), 1)],
                 "ideal": 120,
                 "optimum": 130,
-                "type": "Higher is better"
+                "type": "Lower is better"
             },
             "push_up_1min": {
                 "ranges": [(40.0, float('inf'), 10), (30.0, 39.0, 8), (20.0, 29.0, 6),
@@ -362,7 +362,7 @@ SCORING: Dict = {
                            (119.0, 128.0, 7), (129.0, 140.0, 6), (140.001, float('inf'), 1)],
                 "ideal": 130,
                 "optimum": 150,
-                "type": "Higher is better"
+                "type": "Lower is better"
             },
             "push_up_1min": {
                 "ranges": [(35.0, float('inf'), 10), (25.0, 34.0, 8), (20.0, 24.0, 6),
@@ -411,7 +411,7 @@ SCORING: Dict = {
                            (119.0, 128.0, 7), (129.0, 140.0, 6), (140.001, float('inf'), 1)],
                 "ideal": 140,
                 "optimum": 150,
-                "type": "Higher is better"
+                "type": "Lower is better"
             },
             "push_up_1min": {
                 "ranges": [(30.0, float('inf'), 10), (21.0, 29.0, 8), (15.0, 20.0, 6),
@@ -460,7 +460,7 @@ SCORING: Dict = {
                            (119.0, 128.0, 7), (129.0, 140.0, 6), (140.001, float('inf'), 1)],
                 "ideal": 140,
                 "optimum": 150,
-                "type": "Higher is better"
+                "type": "Lower is better"
             },
             "push_up_1min": {
                 "ranges": [(28.0, float('inf'), 10), (17.0, 27.0, 8), (9.0, 16.0, 6),
