@@ -1,6 +1,5 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime, UniqueConstraint, JSON, Boolean, ForeignKey
+from sqlalchemy import Column, Integer, String, Float, DateTime, UniqueConstraint, JSON
 from sqlalchemy.sql import func
-from sqlalchemy.orm import relationship
 from .database import Base
 
 # PFT RESULT MODEL
@@ -96,25 +95,6 @@ class User(Base):
     )  # evaluator / admin / super_admin
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
-    
-    # Relationship to sessions
-    sessions = relationship("Session", back_populates="user", cascade="all, delete-orphan")
-
-
-# SESSION MODEL - For server-side session management
-class Session(Base):
-    __tablename__ = "sessions"
-    
-    id = Column(String(36), primary_key=True)  # UUID
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    token = Column(String(500), nullable=False, unique=True, index=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    expires_at = Column(DateTime(timezone=True), nullable=False)
-    last_activity = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
-    is_active = Column(Boolean, default=True)
-    
-    # Relationship to user
-    user = relationship("User", back_populates="sessions")
 
 #=== old code ===
 # from sqlalchemy import Column, Integer, String, Float, DateTime, UniqueConstraint, JSON

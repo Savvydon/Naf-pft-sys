@@ -20,7 +20,7 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 1440
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 # Cookie name for session
 SESSION_COOKIE_NAME = "pft_session"
@@ -74,7 +74,7 @@ def set_session_cookie(response: Response, token: str):
         value=token,
         httponly=True,
         secure=True,  # Set to True for HTTPS (production)
-        samesite="lax",
+        samesite="none",  # Changed to "none" for cross-site cookies with HTTPS
         max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         path="/"
     )
@@ -86,7 +86,9 @@ def clear_session_cookie(response: Response):
     """
     response.delete_cookie(
         key=SESSION_COOKIE_NAME,
-        path="/"
+        path="/",
+        samesite="none",
+        secure=True
     )
 
 # GET CURRENT USER FROM COOKIE OR HEADER (supports both)
