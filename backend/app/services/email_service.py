@@ -1,6 +1,7 @@
 #====Updated Email Service Using Resend
 import os
 import traceback
+import base64
 import httpx
 
 
@@ -9,34 +10,21 @@ async def send_email_with_pdf(email: str, pdf_bytes: bytes):
     Send email with PDF attachment using Resend API (HTTP-based, works on Render free tier).
     """
     try:
-        # Try Resend first (HTTP API - not blocked by Render)
         resend_api_key = os.getenv("RESEND_API_KEY")
         
-        if resend_api_key:
-            return await send_with_resend(email, pdf_bytes, resend_api_key)
+        if not resend_api_key:
+            print("[EMAIL ERROR] RESEND_API_KEY not set in environment variables")
+            return False
         
-        # Fallback to SMTP if not on Render free tier
-        return await send_with_smtp(email, pdf_bytes)
-        
-    except Exception as e:
-        print(f"[EMAIL FAILED] {type(e).__name__}: {e}")
-        print(traceback.format_exc())
-        return False
-
-
-async def send_with_resend(email: str, pdf_bytes: bytes, api_key: str):
-    """Send email using Resend HTTP API"""
-    try:
-        import base64
-        
-        print(f"[RESEND] Sending to {email}")
+        print(f"[RESEND] Sending email to {email}")
+        print(f"[RESEND] PDF size: {len(pdf_bytes)} bytes")
         
         # Convert PDF to base64
         pdf_base64 = base64.b64encode(pdf_bytes).decode('utf-8')
         
         # Prepare the email payload
         payload = {
-            "from": os.getenv("EMAIL_FROM", "NAF PFT <onboarding@resend.dev>"),
+            "from": os.getenv("EMAIL_FROM", "onboarding@resend.dev"),
             "to": [email],
             "subject": "Your NAF Physical Fitness Test Report",
             "text": "Dear Personnel,\n\nAttached is your Nigerian Air Force Physical Fitness Test Report.\n\nRegards,\nNAF Fitness Team",
@@ -53,69 +41,23 @@ async def send_with_resend(email: str, pdf_bytes: bytes, api_key: str):
             response = await client.post(
                 "https://api.resend.com/emails",
                 headers={
-                    "Authorization": f"Bearer {api_key}",
+                    "Authorization": f"Bearer {resend_api_key}",
                     "Content-Type": "application/json"
                 },
                 json=payload
             )
             
             if response.status_code == 200:
-                print(f"[RESEND SUCCESS] Email sent to {email}")
+                result = response.json()
+                print(f"[RESEND SUCCESS] Email sent to {email}, ID: {result.get('id')}")
                 return True
             else:
                 print(f"[RESEND ERROR] Status {response.status_code}: {response.text}")
                 return False
                 
     except Exception as e:
-        print(f"[RESEND ERROR] {e}")
-        return False
-
-
-async def send_with_smtp(email: str, pdf_bytes: bytes):
-    """Fallback SMTP method"""
-    try:
-        from email.message import EmailMessage
-        import aiosmtplib
-        
-        smtp_user = os.getenv("SMTP_USER") or os.getenv("EMAIL_FROM")
-        smtp_password = os.getenv("SMTP_PASSWORD")
-        smtp_host = os.getenv("SMTP_HOST", "smtp.gmail.com")
-        smtp_port = int(os.getenv("SMTP_PORT", 587))
-        
-        print(f"[SMTP FALLBACK] Using {smtp_host}:{smtp_port}")
-
-        if not smtp_user or not smtp_password:
-            raise ValueError("Missing SMTP credentials")
-
-        message = EmailMessage()
-        message["From"] = smtp_user
-        message["To"] = email
-        message["Subject"] = "Your NAF Physical Fitness Test Report"
-        message.set_content(
-            "Dear Personnel,\n\nAttached is your Nigerian Air Force Physical Fitness Test Report.\n\nRegards,\nNAF Fitness Team"
-        )
-        message.add_attachment(
-            pdf_bytes,
-            maintype="application",
-            subtype="pdf",
-            filename="NAF_PFT_Report.pdf"
-        )
-
-        await aiosmtplib.send(
-            message,
-            hostname=smtp_host,
-            port=smtp_port,
-            username=smtp_user,
-            password=smtp_password,
-            start_tls=True,
-            timeout=30
-        )
-
-        print(f"[SMTP SUCCESS] Email sent to {email}")
-        return True
-
-    except Exception as e:
-        print(f"[SMTP ERROR] {e}")
+        print(f"[EMAIL FAILED] {type(e).__name__}: {e}")
+        traceback.print_exc()
         return False
 
 
