@@ -5,7 +5,9 @@ import aiosmtplib
 
 
 async def send_email_with_pdf(email: str, pdf_bytes: bytes):
-
+    """
+    Send email with PDF attachment.
+    """
     try:
         smtp_user = os.getenv("SMTP_USER")
         smtp_password = os.getenv("SMTP_PASSWORD")
@@ -15,8 +17,10 @@ async def send_email_with_pdf(email: str, pdf_bytes: bytes):
         if not smtp_user or not smtp_password:
             raise ValueError("Missing SMTP credentials")
 
-        message = EmailMessage()
+        if not pdf_bytes:
+            raise ValueError("No PDF data provided")
 
+        message = EmailMessage()
         message["From"] = smtp_user
         message["To"] = email
         message["Subject"] = "Your NAF Physical Fitness Test Report"
@@ -45,13 +49,10 @@ async def send_email_with_pdf(email: str, pdf_bytes: bytes):
         )
 
         print(f"Email successfully sent to {email}")
-
         return True
 
     except Exception as e:
-
         print("EMAIL SEND FAILED")
         print(str(e))
         print(traceback.format_exc())
-
         return False
