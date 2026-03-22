@@ -13,5 +13,6 @@ bcrypt==4.0.1
 pytest
 email-validator
 alembic
-
-
+email-validator
+alembic
+httpx>=0.24.0  # For Resend API
