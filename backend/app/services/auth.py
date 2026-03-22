@@ -7,9 +7,8 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 from .database import get_db
-from .models import User, Session as UserSession
+from .models import User
 from ..schemas import TokenData
-import uuid
 
 # SECRET & JWT CONFIG
 SECRET_KEY = os.getenv("SECRET_KEY")
@@ -22,6 +21,9 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 1440
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
+
+# Cookie name for session
+SESSION_COOKIE_NAME = "pft_session"
 
 # PASSWORD HELPERS
 def _truncate_password(password: str) -> str:
@@ -62,69 +64,34 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     return encoded_jwt
 
 
-# SESSION MANAGEMENT
-def create_session(db: Session, user: User, token: str) -> UserSession:
-    """Create a new session in the database"""
-    # Invalidate old sessions for this user
-    db.query(UserSession).filter(
-        UserSession.user_id == user.id,
-        UserSession.is_active == True
-    ).update({"is_active": False})
-    
-    # Create new session
-    expires_at = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    session = UserSession(
-        id=str(uuid.uuid4()),
-        user_id=user.id,
-        token=token,
-        expires_at=expires_at,
-        is_active=True
+# SET SESSION COOKIE
+def set_session_cookie(response: Response, token: str):
+    """
+    Set the session cookie with the JWT token.
+    """
+    response.set_cookie(
+        key=SESSION_COOKIE_NAME,
+        value=token,
+        httponly=True,
+        secure=True,  # Set to True for HTTPS (production)
+        samesite="lax",
+        max_age=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        path="/"
     )
-    db.add(session)
-    db.commit()
-    db.refresh(session)
-    return session
 
-def validate_session(db: Session, token: str) -> Optional[User]:
-    """Validate session token and return user"""
-    if not token:
-        return None
-        
-    session = db.query(UserSession).filter(
-        UserSession.token == token,
-        UserSession.is_active == True,
-        UserSession.expires_at > datetime.now(timezone.utc)
-    ).first()
-    
-    if not session:
-        return None
-    
-    # Update last activity
-    session.last_activity = datetime.now(timezone.utc)
-    db.commit()
-    
-    return session.user
+# CLEAR SESSION COOKIE
+def clear_session_cookie(response: Response):
+    """
+    Clear the session cookie (logout).
+    """
+    response.delete_cookie(
+        key=SESSION_COOKIE_NAME,
+        path="/"
+    )
 
-def invalidate_session(db: Session, token: str):
-    """Invalidate a session"""
-    session = db.query(UserSession).filter(UserSession.token == token).first()
-    if session:
-        session.is_active = False
-        db.commit()
-
-def invalidate_all_user_sessions(db: Session, user_id: int):
-    """Invalidate all sessions for a user"""
-    db.query(UserSession).filter(
-        UserSession.user_id == user_id,
-        UserSession.is_active == True
-    ).update({"is_active": False})
-    db.commit()
-
-
-# GET CURRENT USER - Supports both Header and Cookie
+# GET CURRENT USER FROM COOKIE OR HEADER (supports both)
 async def get_current_user(
     request: Request,
-    token: Optional[str] = Depends(oauth2_scheme),
     db: Session = Depends(get_db)
 ) -> User:
     credentials_exception = HTTPException(
@@ -133,19 +100,22 @@ async def get_current_user(
         headers={"WWW-Authenticate": "Bearer"},
     )
     
-    # Try to get token from Authorization header first
-    auth_token = token
+    token = None
     
-    # If no header token, try cookie
-    if not auth_token:
-        auth_token = request.cookies.get("pft_session")
+    # Try to get token from cookie first
+    token = request.cookies.get(SESSION_COOKIE_NAME)
     
-    if not auth_token:
+    # If no cookie, try Authorization header
+    if not token:
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            token = auth_header.replace("Bearer ", "")
+    
+    if not token:
         raise credentials_exception
-    
-    # First validate JWT
+
     try:
-        payload = jwt.decode(auth_token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         svc_no: str = payload.get("sub")
 
         if svc_no is None:
@@ -153,15 +123,10 @@ async def get_current_user(
         token_data = TokenData(svc_no=svc_no)
     except JWTError:
         raise credentials_exception
-    
-    # Then validate session in database
-    user = validate_session(db, auth_token)
-    
+ 
+    user = db.query(User).filter(User.svc_no == token_data.svc_no).first()
+
     if user is None:
-        raise credentials_exception
-        
-    # Verify svc_no matches
-    if user.svc_no != token_data.svc_no:
         raise credentials_exception
 
     return user
