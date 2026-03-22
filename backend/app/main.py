@@ -8,6 +8,13 @@ print("Python version:", sys.version.strip())
 print("Current working dir:", os.getcwd())
 print("DATABASE_URL present?", "yes" if os.getenv("DATABASE_URL") else "NO - MISSING!")
 
+# Check email env vars at startup
+print("SMTP_USER present?", "yes" if os.getenv("SMTP_USER") else "NO")
+print("EMAIL_FROM present?", "yes" if os.getenv("EMAIL_FROM") else "NO")
+print("SMTP_PASSWORD present?", "yes" if os.getenv("SMTP_PASSWORD") else "NO")
+print("SMTP_HOST:", os.getenv("SMTP_HOST", "not set"))
+print("SMTP_PORT:", os.getenv("SMTP_PORT", "not set"))
+
 from fastapi import FastAPI, Depends, HTTPException, UploadFile, File, Form, Body, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
@@ -42,7 +49,6 @@ app = FastAPI(
 print("FastAPI app instance created")
 
 # CORS - Configured with your specific frontend URLs
-# Set ALLOWED_ORIGINS env var for additional origins, defaults to your known URLs
 DEFAULT_ORIGINS = "http://localhost:5173,https://naf-pft-sys.vercel.app"
 ALLOWED_ORIGINS_ENV = os.getenv("ALLOWED_ORIGINS", DEFAULT_ORIGINS)
 ALLOWED_ORIGINS = [origin.strip() for origin in ALLOWED_ORIGINS_ENV.split(",") if origin.strip()]
@@ -51,12 +57,12 @@ print(f"CORS allowed origins: {ALLOWED_ORIGINS}")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,  # Specific origins, not "*"
-    allow_credentials=True,  # Required for cookies
+    allow_origins=ALLOWED_ORIGINS,
+    allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
     expose_headers=["*"],
-    max_age=600,  # Cache preflight requests for 10 minutes
+    max_age=600,
 )
 
 print("CORS middleware added with credentials support")
@@ -101,6 +107,40 @@ def logout_endpoint(response: Response):
     clear_session_cookie(response)
     return {"message": "Logged out successfully"}
 
+# TEST EMAIL ENDPOINT - Simple test without PDF
+@app.get("/test-email")
+async def test_email():
+    """Test email configuration without sending actual email"""
+    try:
+        from email.message import EmailMessage
+        import aiosmtplib
+        
+        smtp_user = os.getenv("SMTP_USER") or os.getenv("EMAIL_FROM")
+        smtp_password = os.getenv("SMTP_PASSWORD")
+        smtp_host = os.getenv("SMTP_HOST", "smtp.gmail.com")
+        smtp_port = int(os.getenv("SMTP_PORT", 587))
+        
+        # Try to connect and authenticate only
+        smtp = aiosmtplib.SMTP(hostname=smtp_host, port=smtp_port)
+        await smtp.connect()
+        await smtp.starttls()
+        await smtp.login(smtp_user, smtp_password)
+        await smtp.quit()
+        
+        return {
+            "status": "success",
+            "message": "SMTP connection and authentication successful",
+            "smtp_user": smtp_user,
+            "smtp_host": smtp_host
+        }
+        
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": str(e),
+            "error_type": type(e).__name__
+        }
+
 # SEND EMAIL REPORT - JSON VERSION
 @app.post("/send-report")
 async def send_report(
@@ -108,39 +148,45 @@ async def send_report(
     current_user: User = Depends(get_current_user)
 ):
     """
-    Send PFT report via email.
-    Expects JSON: { "email": "user@example.com", "report_data": {...} }
+    Send PFT report via email (simple text version for testing).
     """
     try:
         email = data.get("email")
-        report_data = data.get("report_data")
- 
-        if not email or not report_data:
-            raise HTTPException(400, "Email and report_data are required")
+        if not email:
+            raise HTTPException(400, "Email is required")
 
-        success = await send_email_with_pdf(
-            email=email,
-            report_data=report_data
+        from email.message import EmailMessage
+        import aiosmtplib
+        
+        smtp_user = os.getenv("SMTP_USER") or os.getenv("EMAIL_FROM")
+        smtp_password = os.getenv("SMTP_PASSWORD")
+        smtp_host = os.getenv("SMTP_HOST", "smtp.gmail.com")
+        smtp_port = int(os.getenv("SMTP_PORT", 587))
+
+        if not smtp_user or not smtp_password:
+            raise HTTPException(500, "SMTP not configured on server")
+
+        message = EmailMessage()
+        message["From"] = smtp_user
+        message["To"] = email
+        message["Subject"] = "NAF PFT Test Email"
+        message.set_content("This is a test email from NAF PFT system.")
+
+        await aiosmtplib.send(
+            message,
+            hostname=smtp_host,
+            port=smtp_port,
+            username=smtp_user,
+            password=smtp_password,
+            start_tls=True
         )
 
-        if success:
-            return {
-                "status": "success",
-                "message": "Email sent successfully"
-            }
-
-        raise HTTPException(
-            status_code=500,
-            detail="Email sending failed"
-        )
+        return {"status": "success", "message": "Test email sent"}
 
     except Exception as e:
         print("EMAIL ERROR:", str(e))
         traceback.print_exc()
-        raise HTTPException(
-            status_code=500,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=500, detail=str(e))
 
 # SEND REPORT PDF - FILE UPLOAD VERSION
 @app.post("/send-report-pdf")
@@ -151,9 +197,11 @@ async def send_report_pdf(
 ):
     """Send pre-generated PDF file via email"""
     try:
+        print(f"[UPLOAD] Received file: {file.filename}, type: {file.content_type}")
+        
         # Validate file type
         if file.content_type not in ["application/pdf", "application/octet-stream"]:
-            raise HTTPException(400, "File must be a PDF")
+            raise HTTPException(400, f"File must be a PDF, got {file.content_type}")
         
         # Read file contents
         pdf_bytes = await file.read()
@@ -161,22 +209,26 @@ async def send_report_pdf(
         if len(pdf_bytes) == 0:
             raise HTTPException(400, "Empty PDF file received")
         
-        print(f"[EMAIL] Sending PDF to {email}, size: {len(pdf_bytes)} bytes")
+        print(f"[UPLOAD] PDF size: {len(pdf_bytes)} bytes")
+        
+        # Check if PDF is too large (Gmail limit ~25MB)
+        if len(pdf_bytes) > 25 * 1024 * 1024:
+            raise HTTPException(400, "PDF too large (max 25MB for email)")
         
         success = await send_email_with_pdf(email=email, pdf_bytes=pdf_bytes)
 
         if success:
             return {"status": "success", "message": "Email sent successfully"}
-        raise HTTPException(500, "Email sending failed")
+        
+        raise HTTPException(500, "Email sending failed - check server logs for details")
 
     except HTTPException:
         raise
     except Exception as e:
-        print("EMAIL ERROR:", str(e))
+        print("EMAIL ENDPOINT ERROR:", str(e))
         traceback.print_exc()
         raise HTTPException(500, detail=str(e))
     finally:
-        # Ensure file is closed
         await file.close()
 
 # CHECK DUPLICATE ENTRY
