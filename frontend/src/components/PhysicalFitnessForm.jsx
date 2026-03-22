@@ -253,7 +253,7 @@ export function PhysicalFitnessForm({
           type="text"
           value={currentUser?.full_name || ""}
           readOnly
-          disabled
+          // disabled
           style={{
             backgroundColor: "#f0f0f0",
             cursor: "not-allowed",
@@ -269,7 +269,7 @@ export function PhysicalFitnessForm({
           type="text"
           value={currentUser?.rank || ""}
           readOnly
-          disabled
+          // disabled
           style={{
             backgroundColor: "#f0f0f0",
             cursor: "not-allowed",

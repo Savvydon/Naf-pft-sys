@@ -6,7 +6,7 @@ import { loginAdmin } from "../services/adminApi";
 export default function AdminLogin() {
   const [svc_no, setSvcNo] = useState("");
   const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false); // ✅ show/hide password
+  const [showPassword, setShowPassword] = useState(false);
   const [fullName, setFullName] = useState("");
   const [rank, setRank] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
@@ -58,11 +58,14 @@ export default function AdminLogin() {
       console.log("[LOGIN] Role:", data.role);
 
       // Save token before navigating
-      login(data.access_token);
+      login(data.access_token, {
+        role: data.role,
+        full_name: data.full_name,
+        rank: data.rank,
+      });
 
       console.log("[LOGIN] Token saved, navigating to dashboard...");
-      window.location.href = "/admin/dashboard"; // Hard redirect
-      // OR: navigate("/admin/dashboard", { replace: true });
+      navigate("/admin/dashboard", { replace: true });
     } catch (err) {
       console.error("[LOGIN ERROR]", err);
       setErrorMsg(err.message || "Authentication failed");
@@ -103,11 +106,11 @@ export default function AdminLogin() {
         <div style={{ marginBottom: "16px", position: "relative" }}>
           <label style={{ fontWeight: "600" }}>Password</label>
           <input
-            type={showPassword ? "text" : "password"} // ✅ toggle
+            type={showPassword ? "text" : "password"}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            style={{ width: "100%", padding: "10px 40px 10px 10px" }} // room for toggle
+            style={{ width: "100%", padding: "10px 40px 10px 10px" }}
           />
           <button
             type="button"
@@ -219,6 +222,7 @@ export default function AdminLogin() {
 // export default function AdminLogin() {
 //   const [svc_no, setSvcNo] = useState("");
 //   const [password, setPassword] = useState("");
+//   const [showPassword, setShowPassword] = useState(false); // ✅ show/hide password
 //   const [fullName, setFullName] = useState("");
 //   const [rank, setRank] = useState("");
 //   const [errorMsg, setErrorMsg] = useState("");
@@ -228,8 +232,8 @@ export default function AdminLogin() {
 //   const navigate = useNavigate();
 
 //   const ranks = [
-//     "Air Man",
-//     "Air Woman",
+//     "Air CraftMan",
+//     "Air Craftwoman",
 //     "Lance Corporal",
 //     "Corporal",
 //     "Sergeant",
@@ -237,7 +241,6 @@ export default function AdminLogin() {
 //     "Warrant Officer",
 //     "Master Warrant Officer",
 //     "Air Warrant Officer",
-//     "Flying Officer",
 //     "Flight Lieutenant",
 //     "Squadron Leader",
 //     "Wing Commander",
@@ -270,16 +273,12 @@ export default function AdminLogin() {
 //       );
 //       console.log("[LOGIN] Role:", data.role);
 
-//       // CRITICAL: Save token BEFORE navigating
+//       // Save token before navigating
 //       login(data.access_token);
 
 //       console.log("[LOGIN] Token saved, navigating to dashboard...");
-
-//       // Use window.location for hard redirect (most reliable)
-//       window.location.href = "/admin/dashboard";
-
-//       // Alternative: use navigate (if React Router is working)
-//       // navigate("/admin/dashboard", { replace: true });
+//       window.location.href = "/admin/dashboard"; // Hard redirect
+//       // OR: navigate("/admin/dashboard", { replace: true });
 //     } catch (err) {
 //       console.error("[LOGIN ERROR]", err);
 //       setErrorMsg(err.message || "Authentication failed");
@@ -317,15 +316,32 @@ export default function AdminLogin() {
 //           />
 //         </div>
 
-//         <div style={{ marginBottom: "16px" }}>
+//         <div style={{ marginBottom: "16px", position: "relative" }}>
 //           <label style={{ fontWeight: "600" }}>Password</label>
 //           <input
-//             type="password"
+//             type={showPassword ? "text" : "password"} // ✅ toggle
 //             value={password}
 //             onChange={(e) => setPassword(e.target.value)}
 //             required
-//             style={{ width: "100%", padding: "10px" }}
+//             style={{ width: "100%", padding: "10px 40px 10px 10px" }} // room for toggle
 //           />
+//           <button
+//             type="button"
+//             onClick={() => setShowPassword(!showPassword)}
+//             style={{
+//               position: "absolute",
+//               right: "10px",
+//               top: "70%",
+//               transform: "translateY(-50%)",
+//               background: "transparent",
+//               border: "none",
+//               cursor: "pointer",
+//               fontWeight: "600",
+//               color: "#198754",
+//             }}
+//           >
+//             {showPassword ? "Hide" : "Show"}
+//           </button>
 //         </div>
 
 //         <div style={{ marginBottom: "16px" }}>

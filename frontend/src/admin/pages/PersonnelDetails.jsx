@@ -3,7 +3,6 @@ import { useParams, useNavigate, useLocation } from "react-router-dom";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 
-import { getPersonnelById, deletePersonnel } from "../services/adminApi";
 import Header from "../../components/results/Header";
 import PersonalInfo from "../../components/results/PersonalInfo";
 import StatusGroups from "../../components/results/StatusGroups";
@@ -11,6 +10,8 @@ import OverallRecommendation from "../../components/results/OverallRecommendatio
 
 import "../../styles/Results.css";
 import "../styles/Admin.css";
+
+const API_BASE = "https://naf-pft-sys-1.onrender.com";
 
 export default function PersonnelDetails({ fromSuperAdmin = false }) {
   const { id } = useParams();
@@ -28,26 +29,68 @@ export default function PersonnelDetails({ fromSuperAdmin = false }) {
   // Ref to capture the result section for PDF
   const resultsRef = useRef(null);
 
-  useEffect(() => {
-    async function loadData() {
-      try {
-        const data = await getPersonnelById(id);
-        setPerson(data);
-      } catch (err) {
-        setError(err.message || "Failed to load record");
-      } finally {
-        setLoading(false);
-      }
-    }
+  const loadData = async () => {
+    try {
+      setLoading(true);
 
-    loadData();
-  }, [id]);
+      const endpoint = isSuperAdmin
+        ? `${API_BASE}/superadmin/pft-results/${id}`
+        : `${API_BASE}/api/pft-results/${id}`;
+
+      const response = await fetch(endpoint, {
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to load record: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log("[DETAILS] Loaded record:", data);
+      setPerson(data);
+      setError(null);
+    } catch (err) {
+      setError(err.message || "Failed to load record");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    // Check if we have state from navigation (after edit)
+    if (location.state && location.state.id) {
+      console.log("[DETAILS] Using state from navigation:", location.state);
+      setPerson(location.state);
+      setLoading(false);
+    } else {
+      // Otherwise fetch from API
+      loadData();
+    }
+  }, [id, isSuperAdmin, location.state]);
 
   const handleDelete = async () => {
     if (!window.confirm("Delete this record permanently?")) return;
 
     try {
-      await deletePersonnel(id);
+      const endpoint = isSuperAdmin
+        ? `${API_BASE}/superadmin/pft-results/${id}`
+        : `${API_BASE}/api/pft-results/${id}`;
+
+      const response = await fetch(endpoint, {
+        method: "DELETE",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Delete failed");
+      }
+
       // Navigate back to appropriate list
       if (isSuperAdmin) {
         navigate("/superadmin/pft-results");
@@ -68,10 +111,9 @@ export default function PersonnelDetails({ fromSuperAdmin = false }) {
     }
 
     try {
-      // Optional: add class to hide admin buttons in PDF
       input.classList.add("pdf-mode");
 
-      await new Promise((resolve) => setTimeout(resolve, 300)); // wait for render
+      await new Promise((resolve) => setTimeout(resolve, 300));
 
       const canvas = await html2canvas(input, {
         scale: 2,
@@ -146,8 +188,9 @@ export default function PersonnelDetails({ fromSuperAdmin = false }) {
     }
 
     try {
-      const res = await fetch("https://naf-pft-sys.onrender.com/send-report", {
+      const res = await fetch(`${API_BASE}/send-report`, {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: person.email,
@@ -191,7 +234,7 @@ export default function PersonnelDetails({ fromSuperAdmin = false }) {
 
   return (
     <div className="admin-container">
-      {/* The part we want to capture as PDF - uses same classes as Results.jsx */}
+      {/* The part we want to capture as PDF */}
       <div ref={resultsRef} className="results">
         <Header />
         <PersonalInfo state={person} />
@@ -222,19 +265,26 @@ export default function PersonnelDetails({ fromSuperAdmin = false }) {
 }
 
 // import { useEffect, useState, useRef } from "react";
-// import { useParams, useNavigate } from "react-router-dom";
+// import { useParams, useNavigate, useLocation } from "react-router-dom";
 // import html2canvas from "html2canvas";
 // import jsPDF from "jspdf";
 
-// import { getPersonnelById, deletePersonnel } from "../services/adminApi";
 // import Header from "../../components/results/Header";
 // import PersonalInfo from "../../components/results/PersonalInfo";
 // import StatusGroups from "../../components/results/StatusGroups";
 // import OverallRecommendation from "../../components/results/OverallRecommendation";
 
-// export default function PersonnelDetails() {
+// import "../../styles/Results.css";
+// import "../styles/Admin.css";
+
+// export default function PersonnelDetails({ fromSuperAdmin = false }) {
 //   const { id } = useParams();
 //   const navigate = useNavigate();
+//   const location = useLocation();
+
+//   // Determine if coming from super admin based on URL or prop
+//   const isSuperAdmin =
+//     fromSuperAdmin || location.pathname.includes("/superadmin/");
 
 //   const [person, setPerson] = useState(null);
 //   const [loading, setLoading] = useState(true);
@@ -243,27 +293,65 @@ export default function PersonnelDetails({ fromSuperAdmin = false }) {
 //   // Ref to capture the result section for PDF
 //   const resultsRef = useRef(null);
 
-//   useEffect(() => {
-//     async function loadData() {
-//       try {
-//         const data = await getPersonnelById(id);
-//         setPerson(data);
-//       } catch (err) {
-//         setError(err.message || "Failed to load record");
-//       } finally {
-//         setLoading(false);
-//       }
-//     }
+//   const loadData = async () => {
+//     try {
+//       setLoading(true);
 
+//       const endpoint = isSuperAdmin
+//         ? `https://naf-pft-sys-1.onrender.com/superadmin/pft-results/${id}`
+//         : `https://naf-pft-sys-1.onrender.com/api/pft-results/${id}`;
+
+//       const response = await fetch(endpoint, {
+//         credentials: "include",
+//         headers: {
+//           "Content-Type": "application/json",
+//         },
+//       });
+
+//       if (!response.ok) {
+//         throw new Error(`Failed to load record: ${response.status}`);
+//       }
+
+//       const data = await response.json();
+//       setPerson(data);
+//       setError(null);
+//     } catch (err) {
+//       setError(err.message || "Failed to load record");
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
+
+//   useEffect(() => {
 //     loadData();
-//   }, [id]);
+//   }, [id, isSuperAdmin]);
 
 //   const handleDelete = async () => {
 //     if (!window.confirm("Delete this record permanently?")) return;
 
 //     try {
-//       await deletePersonnel(id);
-//       navigate("/admin/personnel");
+//       const endpoint = isSuperAdmin
+//         ? `https://naf-pft-sys-1.onrender.com/superadmin/pft-results/${id}`
+//         : `https://naf-pft-sys-1.onrender.com/api/pft-results/${id}`;
+
+//       const response = await fetch(endpoint, {
+//         method: "DELETE",
+//         credentials: "include",
+//         headers: {
+//           "Content-Type": "application/json",
+//         },
+//       });
+
+//       if (!response.ok) {
+//         throw new Error("Delete failed");
+//       }
+
+//       // Navigate back to appropriate list
+//       if (isSuperAdmin) {
+//         navigate("/superadmin/pft-results");
+//       } else {
+//         navigate("/admin/personnel");
+//       }
 //     } catch (err) {
 //       alert("Delete failed: " + (err.message || "Unknown error"));
 //     }
@@ -356,14 +444,18 @@ export default function PersonnelDetails({ fromSuperAdmin = false }) {
 //     }
 
 //     try {
-//       const res = await fetch("https://naf-pft-sys.onrender.com/send-report", {
-//         method: "POST",
-//         headers: { "Content-Type": "application/json" },
-//         body: JSON.stringify({
-//           email: person.email,
-//           report_data: person,
-//         }),
-//       });
+//       const res = await fetch(
+//         "https://naf-pft-sys-1.onrender.com/send-report",
+//         {
+//           method: "POST",
+//           credentials: "include",
+//           headers: { "Content-Type": "application/json" },
+//           body: JSON.stringify({
+//             email: person.email,
+//             report_data: person,
+//           }),
+//         },
+//       );
 
 //       const data = await res.json();
 
@@ -377,36 +469,44 @@ export default function PersonnelDetails({ fromSuperAdmin = false }) {
 //     }
 //   };
 
+//   // Handle back navigation based on user type
+//   const handleBack = () => {
+//     if (isSuperAdmin) {
+//       navigate("/superadmin/pft-results");
+//     } else {
+//       navigate("/admin/personnel");
+//     }
+//   };
+
+//   // Handle edit navigation based on user type
+//   const handleEdit = () => {
+//     if (isSuperAdmin) {
+//       navigate(`/superadmin/pft-results/${id}/edit`);
+//     } else {
+//       navigate(`/admin/personnel/${id}/edit`);
+//     }
+//   };
+
 //   if (loading) return <p className="loading-text">Loading record...</p>;
 //   if (error) return <p className="error">Error: {error}</p>;
 //   if (!person) return <p className="not-found">Record not found</p>;
 
 //   return (
 //     <div className="admin-container">
-//       {/* <h2>Personnel Details – {person.full_name || "Unnamed"}</h2> */}
-
-//       {/* The part we want to capture as PDF */}
-//       <div ref={resultsRef} className="result-view-section">
-//         {/* <h3 className="result-title">Physical Fitness Test Result</h3> */}
-
-//         <Header /* add props if needed */ />
+//       {/* The part we want to capture as PDF - uses same classes as Results.jsx */}
+//       <div ref={resultsRef} className="results">
+//         <Header />
 //         <PersonalInfo state={person} />
 //         <StatusGroups state={person} />
 //         <OverallRecommendation state={person} />
 //       </div>
 
 //       {/* Admin + extra actions */}
-//       <div className="actions">
-//         <button
-//           className="back-btn"
-//           onClick={() => navigate("/admin/personnel")}
-//         >
-//           Back to List
+//       <div className="admin-actions-container">
+//         <button className="back-btn" onClick={handleBack}>
+//           ← Back to List
 //         </button>
-//         <button
-//           className="edit-btn"
-//           onClick={() => navigate(`/admin/personnel/${id}/edit`)}
-//         >
+//         <button className="edit-btn" onClick={handleEdit}>
 //           Edit Record
 //         </button>
 //         <button className="delete-btn" onClick={handleDelete}>
