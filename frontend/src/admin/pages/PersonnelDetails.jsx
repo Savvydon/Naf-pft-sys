@@ -25,6 +25,7 @@ export default function PersonnelDetails({ fromSuperAdmin = false }) {
   const [person, setPerson] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isSending, setIsSending] = useState(false);
 
   // Ref to capture the result section for PDF
   const resultsRef = useRef(null);
@@ -102,111 +103,153 @@ export default function PersonnelDetails({ fromSuperAdmin = false }) {
     }
   };
 
-  // Generate and download PDF
-  const downloadPDF = async () => {
+  // ---------- GENERATE PDF - REDUCED SIZE FOR EMAIL ----------
+  const generatePDF = async (forEmail = false) => {
     const input = resultsRef.current;
-    if (!input) {
-      alert("No content to capture");
-      return;
+    if (!input) return null;
+
+    input.classList.add("pdf-mode");
+    await new Promise((r) => setTimeout(r, 300));
+
+    // Use much lower scale for email to keep size under 5MB
+    const scale = forEmail ? 0.8 : 1.5;
+
+    const canvas = await html2canvas(input, {
+      scale: scale,
+      backgroundColor: "#ffffff",
+      windowWidth: 924,
+      imageTimeout: 0,
+      useCORS: true,
+    });
+
+    const pdf = new jsPDF("p", "mm", "a4");
+
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const marginX = 15;
+    const marginY = 20;
+    const usableWidth = pageWidth - marginX * 2;
+
+    const ratio = usableWidth / canvas.width;
+    const pageCanvasHeight = (pageHeight - marginY * 2) / ratio;
+
+    let renderedHeight = 0;
+
+    while (renderedHeight < canvas.height) {
+      const sliceHeight = Math.min(
+        pageCanvasHeight,
+        canvas.height - renderedHeight,
+      );
+
+      const tempCanvas = document.createElement("canvas");
+      tempCanvas.width = canvas.width;
+      tempCanvas.height = sliceHeight;
+
+      const ctx = tempCanvas.getContext("2d");
+      ctx.drawImage(
+        canvas,
+        0,
+        renderedHeight,
+        canvas.width,
+        sliceHeight,
+        0,
+        0,
+        canvas.width,
+        sliceHeight,
+      );
+
+      // Use JPEG with lower quality for smaller file size
+      const imgData = tempCanvas.toDataURL("image/jpeg", forEmail ? 0.6 : 0.9);
+
+      pdf.addImage(
+        imgData,
+        "JPEG",
+        marginX,
+        marginY,
+        usableWidth,
+        sliceHeight * ratio,
+      );
+
+      renderedHeight += sliceHeight;
+      if (renderedHeight < canvas.height) {
+        pdf.addPage();
+      }
     }
 
+    input.classList.remove("pdf-mode");
+    return pdf;
+  };
+
+  // ---------- DOWNLOAD PDF - HIGH QUALITY ----------
+  const downloadPDF = async () => {
     try {
-      input.classList.add("pdf-mode");
-
-      await new Promise((resolve) => setTimeout(resolve, 300));
-
-      const canvas = await html2canvas(input, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: "#ffffff",
-      });
-
-      const pdf = new jsPDF("p", "mm", "a4");
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-
-      const marginX = 15;
-      const marginY = 20;
-      const usableWidth = pageWidth - marginX * 2;
-      const ratio = usableWidth / canvas.width;
-      const pageCanvasHeight = (pageHeight - marginY * 2) / ratio;
-
-      let renderedHeight = 0;
-
-      while (renderedHeight < canvas.height) {
-        const sliceHeight = Math.min(
-          pageCanvasHeight,
-          canvas.height - renderedHeight,
-        );
-
-        const tempCanvas = document.createElement("canvas");
-        tempCanvas.width = canvas.width;
-        tempCanvas.height = sliceHeight;
-
-        const ctx = tempCanvas.getContext("2d");
-        ctx.drawImage(
-          canvas,
-          0,
-          renderedHeight,
-          canvas.width,
-          sliceHeight,
-          0,
-          0,
-          canvas.width,
-          sliceHeight,
-        );
-
-        pdf.addImage(
-          tempCanvas.toDataURL("image/png"),
-          "PNG",
-          marginX,
-          marginY,
-          usableWidth,
-          sliceHeight * ratio,
-        );
-
-        renderedHeight += sliceHeight;
-        if (renderedHeight < canvas.height) pdf.addPage();
-      }
-
+      const pdf = await generatePDF(false);
+      if (!pdf) return;
       pdf.save(
         `NAF_PFT_${person.svc_no || "RESULT"}_${person.year || "Unknown"}.pdf`,
       );
-
-      input.classList.remove("pdf-mode");
     } catch (err) {
       console.error("PDF generation failed:", err);
       alert("Failed to generate PDF. Please try again.");
     }
   };
 
-  // Send email report
+  // ---------- SEND EMAIL - WITH PDF ATTACHMENT ----------
   const sendEmail = async () => {
+    if (isSending) return;
+
     if (!person?.email) {
       alert("No email address found for this record.");
       return;
     }
 
+    setIsSending(true);
+
     try {
-      const res = await fetch(`${API_BASE}/send-report`, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: person.email,
-          report_data: person,
-        }),
-      });
+      console.log("=== Admin Send Email clicked ===");
+      console.log("Sending to:", person.email);
 
-      const data = await res.json();
+      // Generate LOW QUALITY PDF for email
+      const pdf = await generatePDF(true);
+      if (!pdf) throw new Error("Failed to generate PDF");
 
-      if (!res.ok) {
-        throw new Error(data.message || "Email sending failed");
+      const pdfBlob = pdf.output("blob");
+
+      console.log("PDF Blob size:", pdfBlob.size, "bytes");
+
+      // Check size limit
+      if (pdfBlob.size > 4.5 * 1024 * 1024) {
+        alert("PDF is too large for email. Please download and send manually.");
+        setIsSending(false);
+        return;
       }
 
+      // Create FormData
+      const formData = new FormData();
+      formData.append("email", person.email);
+      formData.append("file", pdfBlob, "NAF_PFT_Report.pdf");
+
+      const res = await fetch(`${API_BASE}/send-report-pdf`, {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        const errText = errData.detail || (await res.text());
+        console.error("Server error:", res.status, errText);
+        throw new Error(`Server error: ${res.status} - ${errText}`);
+      }
+
+      const data = await res.json();
+      console.log("Email sent successfully:", data);
       alert("Report sent successfully to " + person.email);
     } catch (err) {
-      alert("Failed to send email: " + (err.message || "Unknown error"));
+      console.error("Send email failed:", err);
+      alert("Failed to send email: " + err.message);
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -256,8 +299,12 @@ export default function PersonnelDetails({ fromSuperAdmin = false }) {
         <button className="btn pdf-btn" onClick={downloadPDF}>
           Download as PDF
         </button>
-        <button className="btn email-btn" onClick={sendEmail}>
-          Send to Email
+        <button
+          className="btn email-btn"
+          onClick={sendEmail}
+          disabled={isSending}
+        >
+          {isSending ? "Sending..." : "Send to Email"}
         </button>
       </div>
     </div>
