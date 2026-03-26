@@ -59,7 +59,7 @@ body {
 
 .results p b {
   color: #0a3d62;
-  min-width: 180px; /* better alignment on desktop */
+  min-width: 180px;
   font-weight: 600;
 }
 
@@ -131,7 +131,6 @@ h3 + p:has(b:contains("Recommended")) {
   margin-bottom: 1.5rem;
 }
 
-
 .personal-info p {
   margin: 0;
   padding: 0.5rem 0.8rem;
@@ -143,10 +142,11 @@ h3 + p:has(b:contains("Recommended")) {
 /* status display */
 .status-info {
   display: grid;
-  grid-template-columns: repeat(3, 1fr); /* 3 columns per row */
-  gap: 0.6rem 2rem; /* row gap | column gap */
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.6rem 2rem;
   margin-bottom: 1.5rem;
 }
+
 .status-info p {
   margin: 0;
   padding: 0.5rem 0.8rem;
@@ -155,19 +155,56 @@ h3 + p:has(b:contains("Recommended")) {
   gap: 0.5rem;
 }
 
-/* Normal page styles stay the same */
-/* Force desktop layout for PDF */
+/* ============================================
+   PDF MODE - CRITICAL FIXES FOR EXACT WIDTH
+   ============================================ */
+
 .pdf-mode {
-  width: 794px; /* A4 width at 96 DPI */
-  max-width: none;
-  margin: 0 auto;
+  position: relative !important;
+  top: 0 !important;
+  left: 0 !important;
+  margin: 0 auto !important;
+  padding: 20px !important;
+  transform: none !important;
+  box-sizing: border-box !important;
+
+  /* Force exact A4 width and prevent squeezing */
+  width: 794px !important;
+  min-width: 794px !important;
+  max-width: 794px !important;
+
+  /* Reset any conflicting styles */
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  border: 1px solid #ddd !important;
 }
 
-/* Prevent mobile stacking */
+/* Ensure all children maintain proper width */
 .pdf-mode * {
-  box-sizing: border-box;
+  box-sizing: border-box !important;
+  max-width: 100% !important;
 }
 
+/* Fix personal info grid in PDF mode */
+.pdf-mode .personal-info {
+  grid-template-columns: 1fr 1fr !important;
+  width: 100% !important;
+}
+
+/* Fix status info grid in PDF mode */
+.pdf-mode .status-info {
+  grid-template-columns: repeat(3, 1fr) !important;
+  width: 100% !important;
+}
+
+/* Ensure paragraphs don't overflow */
+.pdf-mode p {
+  width: 100% !important;
+  max-width: 100% !important;
+  word-wrap: break-word !important;
+}
+
+/* Action buttons */
 .action-buttons {
   display: flex;
   flex-wrap: wrap;
@@ -196,7 +233,7 @@ h3 + p:has(b:contains("Recommended")) {
 }
 
 .pdf-btn {
-  background-color: #2e7d32; /* green */
+  background-color: #2e7d32;
   color: white;
 }
 
@@ -205,7 +242,7 @@ h3 + p:has(b:contains("Recommended")) {
 }
 
 .email-btn {
-  background-color: #1976d2; /* blue */
+  background-color: #1976d2;
   color: white;
 }
 
@@ -214,13 +251,17 @@ h3 + p:has(b:contains("Recommended")) {
 }
 
 .home-btn {
-  background-color: #616161; /* gray */
+  background-color: #616161;
   color: white;
 }
 
 .home-btn:hover {
   background-color: #424242;
 }
+
+/* ============================================
+   MOBILE RESPONSIVE
+   ============================================ */
 
 @media (max-width: 768px) {
   .results {
@@ -256,18 +297,13 @@ h3 + p:has(b:contains("Recommended")) {
     border-left: none;
     border-top: 4px solid #c0392b;
   }
-  /* Mobile fallback */
+
   .personal-info {
     grid-template-columns: 1fr;
   }
+
   .status-info {
     grid-template-columns: 1fr;
-  }
-  
-  /* Normal page styles stay the same */
-  /* Force desktop layout for PDF */
-  .pdf-mode {
-    width: 794px;
   }
 }
 
@@ -279,6 +315,7 @@ h3 + p:has(b:contains("Recommended")) {
     line-height: 1;
     min-height: 100vh;
   }
+
   .results {
     padding: 1.2rem;
   }
@@ -295,8 +332,5 @@ h3 + p:has(b:contains("Recommended")) {
   p:has(b:contains("Performance Remark")) {
     font-size: 1.15rem;
     padding: 1rem;
-  }
-  .pdf-mode {
-    width: 794px;
   }
 }
