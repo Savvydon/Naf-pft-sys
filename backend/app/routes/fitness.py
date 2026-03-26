@@ -58,22 +58,32 @@ async def get_all_pft_results(
                 "cardio_points": r.cardio_points,
                 "step_up_value": r.step_up_value,
                 "step_up_ideal": r.step_up_ideal,
+                "step_up_deficit": r.step_up_deficit,
+                "step_up_excess": r.step_up_excess,
                 "step_up_status": r.step_up_status,
                 "step_up_points": r.step_up_points,
                 "push_up_value": r.push_up_value,
                 "push_up_ideal": r.push_up_ideal,
+                "push_up_deficit": r.push_up_deficit,
+                "push_up_excess": r.push_up_excess,
                 "push_up_status": r.push_up_status,
                 "push_up_points": r.push_up_points,
                 "sit_up_value": r.sit_up_value,
                 "sit_up_ideal": r.sit_up_ideal,
+                "sit_up_deficit": r.sit_up_deficit,
+                "sit_up_excess": r.sit_up_excess,
                 "sit_up_status": r.sit_up_status,
                 "sit_up_points": r.sit_up_points,
                 "chin_up_value": r.chin_up_value,
                 "chin_up_ideal": r.chin_up_ideal,
+                "chin_up_deficit": r.chin_up_deficit,
+                "chin_up_excess": r.chin_up_excess,
                 "chin_up_status": r.chin_up_status,
                 "chin_up_points": r.chin_up_points,
                 "sit_reach_value": r.sit_reach_value,
                 "sit_reach_ideal": r.sit_reach_ideal,
+                "sit_reach_deficit": r.sit_reach_deficit,
+                "sit_reach_excess": r.sit_reach_excess,
                 "sit_reach_status": r.sit_reach_status,
                 "sit_reach_points": r.sit_reach_points,
                 "aggregate": r.aggregate,
@@ -217,7 +227,7 @@ async def update_pft_result(
         else:
             print(f"[UPDATE] Skipping recomputation - missing required fields")
 
-        # Explicitly commit the transaction
+        # Explicitly commit the computation
         db.commit()
         
         # Refresh to get updated timestamps and ensure data is persisted
