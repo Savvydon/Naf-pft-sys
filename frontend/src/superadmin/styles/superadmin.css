@@ -1,6 +1,62 @@
 /* ============================================
    SUPERADMIN STYLES - MOBILE FIRST RESPONSIVE
    ============================================ */
+   /* Admin Details Page */
+   /* Status Badge Styles */
+.status-badge {
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  display: inline-block;
+}
+
+.status-badge.issued {
+  background: #d4edda;
+  color: #155724;
+}
+
+.status-badge.fit {
+  background: #d4edda;
+  color: #155724;
+}
+
+.status-badge.notfit {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.status-badge.excused {
+  background: #fff3cd;
+  color: #856404;
+}
+
+/* Details Card Enhancement */
+.details-card {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  margin-bottom: 25px;
+}
+
+.details-card h3 {
+  margin: 0 0 15px 0;
+  color: #0b3d91;
+  font-size: 1.3rem;
+}
+
+.details-card p {
+  margin: 8px 0;
+  color: #333;
+  font-size: 0.95rem;
+}
+
+.details-card strong {
+  color: #555;
+  display: inline-block;
+  width: 180px;
+}
 
 /* Base Variables */
 :root {
@@ -56,6 +112,28 @@
   cursor: pointer;
   width: 100%;
   font-size: 1rem;
+}
+.issue-btn {
+  background: #f59e0b;
+  color: white;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.issue-btn:hover {
+  background: #d97706;
+  transform: translateY(-1px);
+}
+
+/* For table actions */
+.data-table .issue-btn {
+  padding: 4px 8px;
+  font-size: 0.7rem;
 }
 
 /* Tablet and up */

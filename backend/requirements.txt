@@ -16,3 +16,4 @@ alembic
 email-validator
 alembic
 httpx>=0.24.0  # For Resend API
+Pillow>=10.0.0

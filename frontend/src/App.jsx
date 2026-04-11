@@ -1,36 +1,44 @@
 import { Routes, Route, Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "./AuthContext";
+
+// Evaluator Pages
 import PhysicalFitness from "./components/PhysicalFitness";
 import Results from "./components/Results";
 import Login from "./components/Login";
+
+// Admin Pages
 import AdminLogin from "./admin/pages/AdminLogin";
 import AdminDashboard from "./admin/pages/AdminDashboard";
 import AdminAnalytics from "./admin/pages/Analytics";
 import PersonnelList from "./admin/pages/PersonnelList";
 import PersonnelDetails from "./admin/pages/PersonnelDetails";
 import PersonnelEdit from "./admin/pages/PersonnelEdit";
-import AdminProtectedRoute from "./admin/components/AdminProtectedRoute";
+
+// Super Admin Pages
 import SuperAdminLogin from "./superadmin/pages/SuperAdminLogin";
 import SuperAdminDashboard from "./superadmin/pages/SuperAdminDashboard";
 import SuperAdminAnalytics from "./superadmin/pages/Analytics";
 import EvaluatorsList from "./superadmin/pages/EvaluatorsList";
 import AdminsList from "./superadmin/pages/AdminsList";
-import SuperAdminProtectedRoute from "./superadmin/components/SuperAdminProtectedRoute";
 import CreateEvaluator from "./superadmin/pages/CreateEvaluator";
 import CreateAdmin from "./superadmin/pages/CreateAdmin";
 import EvaluatorDetails from "./superadmin/pages/EvaluatorDetails";
+import AdminDetails from "./superadmin/pages/AdminDetails";  // ← NEW IMPORT
 import PFTResultsList from "./superadmin/pages/PFTResultsList";
+
+// Certificate Page
+import Certificate from "./components/Certificate";
+
+// Protected Route Components
+import AdminProtectedRoute from "./admin/components/AdminProtectedRoute";
+import SuperAdminProtectedRoute from "./superadmin/components/SuperAdminProtectedRoute";
 
 // Protected Evaluator Route
 function EvaluatorProtectedRoute() {
   const { currentUser, authLoading } = useAuth();
 
   if (authLoading) {
-    return (
-      <div style={{ textAlign: "center", marginTop: "50px" }}>
-        Authenticating...
-      </div>
-    );
+    return <div style={{ textAlign: "center", marginTop: "50px" }}>Authenticating...</div>;
   }
 
   if (!currentUser) {
@@ -40,20 +48,15 @@ function EvaluatorProtectedRoute() {
   return <Outlet />;
 }
 
-// Redirect logged-in evaluators away from login
+// Redirect logged-in users away from login pages
 function EvaluatorLoginRedirect({ children }) {
   const { currentUser, authLoading } = useAuth();
 
   if (authLoading) {
-    return (
-      <div style={{ textAlign: "center", marginTop: "50px" }}>
-        Authenticating...
-      </div>
-    );
+    return <div style={{ textAlign: "center", marginTop: "50px" }}>Authenticating...</div>;
   }
 
   if (currentUser) {
-    // Redirect based on role
     if (currentUser.role === "super_admin") {
       return <Navigate to="/superadmin/dashboard" replace />;
     } else if (currentUser.role === "admin") {
@@ -66,11 +69,11 @@ function EvaluatorLoginRedirect({ children }) {
   return children;
 }
 
-// APP ROUTES
+// Main App Routes
 export default function App() {
   return (
     <Routes>
-      {/* SUPER ADMIN ROUTES */}
+      {/* ====================== SUPER ADMIN ROUTES ====================== */}
       <Route
         path="/superadmin/login"
         element={
@@ -84,28 +87,25 @@ export default function App() {
         <Route path="/superadmin/dashboard" element={<SuperAdminDashboard />} />
         <Route path="/superadmin/analytics" element={<SuperAdminAnalytics />} />
         <Route path="/superadmin/evaluators" element={<EvaluatorsList />} />
-        <Route
-          path="/superadmin/evaluators/create"
-          element={<CreateEvaluator />}
-        />
-        <Route
-          path="/superadmin/evaluators/:id"
-          element={<EvaluatorDetails />}
-        />
+        <Route path="/superadmin/evaluators/create" element={<CreateEvaluator />} />
+        <Route path="/superadmin/evaluators/:id" element={<EvaluatorDetails />} />
         <Route path="/superadmin/admins" element={<AdminsList />} />
         <Route path="/superadmin/admins/create" element={<CreateAdmin />} />
+        <Route path="/superadmin/admins/:id" element={<AdminDetails />} />  {/* ← NEW ROUTE */}
         <Route path="/superadmin/pft-results" element={<PFTResultsList />} />
+
+        {/* Personnel / Result Detail & Edit */}
+        <Route path="/superadmin/pft-results/:id" element={<PersonnelDetails fromSuperAdmin={true} />} />
+        <Route path="/superadmin/pft-results/:id/edit" element={<PersonnelEdit fromSuperAdmin={true} />} />
+
+        {/* CERTIFICATE ROUTE - SUPER ADMIN */}
         <Route
-          path="/superadmin/pft-results/:id"
-          element={<PersonnelDetails fromSuperAdmin={true} />}
-        />
-        <Route
-          path="/superadmin/pft-results/:id/edit"
-          element={<PersonnelEdit fromSuperAdmin={true} />}
+          path="/superadmin/pft-results/:id/certificate"
+          element={<Certificate fromSuperAdmin={true} />}
         />
       </Route>
 
-      {/* ADMIN ROUTES */}
+      {/* ====================== ADMIN ROUTES ====================== */}
       <Route
         path="/admin/login"
         element={
@@ -119,17 +119,19 @@ export default function App() {
         <Route path="/admin/dashboard" element={<AdminDashboard />} />
         <Route path="/admin/analytics" element={<AdminAnalytics />} />
         <Route path="/admin/personnel" element={<PersonnelList />} />
+
+        {/* Personnel / Result Detail & Edit */}
+        <Route path="/admin/personnel/:id" element={<PersonnelDetails fromSuperAdmin={false} />} />
+        <Route path="/admin/personnel/:id/edit" element={<PersonnelEdit fromSuperAdmin={false} />} />
+
+        {/* CERTIFICATE ROUTE - ADMIN */}
         <Route
-          path="/admin/personnel/:id"
-          element={<PersonnelDetails fromSuperAdmin={false} />}
-        />
-        <Route
-          path="/admin/personnel/:id/edit"
-          element={<PersonnelEdit fromSuperAdmin={false} />}
+          path="/admin/personnel/:id/certificate"
+          element={<Certificate fromSuperAdmin={false} />}
         />
       </Route>
 
-      {/* EVALUATOR LOGIN */}
+      {/* ====================== EVALUATOR ROUTES ====================== */}
       <Route
         path="/login"
         element={
@@ -139,13 +141,12 @@ export default function App() {
         }
       />
 
-      {/* EVALUATOR ROUTES */}
       <Route element={<EvaluatorProtectedRoute />}>
         <Route path="/" element={<PhysicalFitness />} />
         <Route path="/results" element={<Results />} />
       </Route>
 
-      {/* FALLBACK */}
+      {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
