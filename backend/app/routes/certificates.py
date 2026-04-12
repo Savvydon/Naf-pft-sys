@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from typing import List, Optional
+from typing import List
 
 from app.schemas import CertificateCreate, CertificateUpdate, CertificateOut, CertificateCheckResponse
 from app.services.database import get_db
@@ -27,7 +27,6 @@ def generate_certificate_number(db: Session) -> str:
                 numbers.append(num)
             except (ValueError, AttributeError):
                 continue
-
         next_num = max(numbers) + 1 if numbers else 54991
     else:
         next_num = 54991
@@ -40,7 +39,7 @@ def generate_certificate_number(db: Session) -> str:
 def create_certificate(
     cert_data: CertificateCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin)   # Admin or Super Admin
+    current_user: User = Depends(require_admin)
 ):
     """Create a new certificate (Admin or Super Admin only)"""
 
@@ -88,13 +87,13 @@ def create_certificate(
     }
 
 
-# ==================== UPDATE CERTIFICATE (FIXED) ====================
+# ==================== UPDATE CERTIFICATE ====================
 @router.put("/{cert_id}", response_model=CertificateOut)
 def update_certificate(
     cert_id: int,
     cert_data: CertificateUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_admin)   # Admin or Super Admin
+    current_user: User = Depends(require_admin)   # Allows both admin & super_admin
 ):
     """Update certificate - Any Admin or Super Admin can update"""
     
@@ -102,20 +101,20 @@ def update_certificate(
     if not cert:
         raise HTTPException(status_code=404, detail="Certificate not found")
 
-    # ✅ Improved permission: Any Admin or Super Admin can edit
+    # ✅ Any Admin or Super Admin can edit (as per your requirement)
     if current_user.role not in ["admin", "super_admin"]:
         raise HTTPException(
             status_code=403, 
             detail="Only Admins and Super Admins can update certificates"
         )
 
-    # Optional: You can be stricter and only allow issuer + admins
+    # Optional stricter rule (uncomment if you want only issuer + super_admin):
     # if current_user.role != "super_admin" and cert.issued_by != current_user.id:
-    #     raise HTTPException(403, "Only the issuer or Super Admin can update this certificate")
+    #     raise HTTPException(403, "Only the original issuer or Super Admin can update this certificate")
 
     update_data = cert_data.model_dump(exclude_unset=True)
     for field, value in update_data.items():
-        if value is not None:   # Only update fields that were actually sent
+        if value is not None:   # Safe update
             setattr(cert, field, value)
 
     db.commit()
@@ -127,7 +126,7 @@ def update_certificate(
     }
 
 
-# ==================== OTHER ENDPOINTS (unchanged but cleaned) ====================
+# ==================== OTHER ENDPOINTS ====================
 
 @router.get("/", response_model=List[CertificateOut])
 def get_all_certificates(
@@ -136,7 +135,10 @@ def get_all_certificates(
 ):
     certs = db.query(Certificate).order_by(Certificate.created_at.desc()).all()
     return [
-        {**cert.__dict__, 'created_at': cert.created_at.isoformat() if cert.created_at else None}
+        {
+            **cert.__dict__,
+            'created_at': cert.created_at.isoformat() if cert.created_at else None
+        }
         for cert in certs
     ]
 
@@ -150,6 +152,7 @@ def get_certificate(
     cert = db.query(Certificate).filter(Certificate.id == cert_id).first()
     if not cert:
         raise HTTPException(status_code=404, detail="Certificate not found")
+
     return {
         **cert.__dict__,
         'created_at': cert.created_at.isoformat() if cert.created_at else None
@@ -165,8 +168,10 @@ def get_certificate_by_pft(
     cert = db.query(Certificate).filter(
         Certificate.pft_result_id == pft_result_id
     ).first()
+
     if not cert:
         raise HTTPException(status_code=404, detail="Certificate not found for this PFT result")
+
     return {
         **cert.__dict__,
         'created_at': cert.created_at.isoformat() if cert.created_at else None
@@ -189,6 +194,7 @@ def check_certificate_exists(
             certificate_id=cert.id,
             certificate_number=cert.certificate_number
         )
+
     return CertificateCheckResponse(exists=False)
 
 
@@ -204,19 +210,25 @@ def delete_certificate(
 
     db.delete(cert)
     db.commit()
+
     return {"message": f"Certificate {cert.certificate_number} deleted successfully"}
 
 
-# Optional: Keep these if you use them
 @router.get("/issuer/{admin_id}", response_model=List[CertificateOut])
 def get_certificates_by_issuer(
     admin_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_super_admin)
 ):
-    certs = db.query(Certificate).filter(Certificate.issued_by == admin_id).all()
+    certs = db.query(Certificate).filter(
+        Certificate.issued_by == admin_id
+    ).order_by(Certificate.created_at.desc()).all()
+
     return [
-        {**cert.__dict__, 'created_at': cert.created_at.isoformat() if cert.created_at else None}
+        {
+            **cert.__dict__,
+            'created_at': cert.created_at.isoformat() if cert.created_at else None
+        }
         for cert in certs
     ]
 
@@ -230,6 +242,7 @@ def get_certificate_count(
     count = db.query(func.count(Certificate.id)).filter(
         Certificate.issued_by == admin_id
     ).scalar()
+
     return {"admin_id": admin_id, "certificates_count": count}
 
 # from fastapi import APIRouter, Depends, HTTPException, status
