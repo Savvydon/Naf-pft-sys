@@ -1,4 +1,4 @@
-const API_BASE = "https://naf-pft-sys-1.onrender.com";
+const API_BASE = "https://naf-pft-sys-1.onrender.com ";
 
 const getHeaders = (contentType = true) => {
   const headers = {};
@@ -19,6 +19,20 @@ async function handleError(res) {
 }
 
 // ==================== CERTIFICATE ENDPOINTS ====================
+
+// Get next certificate number from backend
+export async function getNextCertificateNumber() {
+  const response = await fetch(`${API_BASE}/certificates/next-number`, {
+    credentials: "include",
+    headers: getHeaders(),
+  });
+
+  if (!response.ok) {
+    await handleError(response);
+  }
+
+  return response.json();
+}
 
 // Create new certificate
 export async function createCertificate(certificateData) {
