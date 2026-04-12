@@ -301,7 +301,7 @@ try:
     from app.routes.fitness import router as fitness_router
     from app.routes.auth import router as auth_router
     from app.routes.superadmin import router as superadmin_router
-    from app.routes.certificates import router as certificates_router  # NEW: Certificate routes
+    from app.routes.certificate import router as certificate_router  # NEW: Certificate routes
     from app.services.email_service import send_email_with_pdf
     from app.services.database import engine, get_db
     from app.services.models import Base, PFTResult, User
