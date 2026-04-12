@@ -1,3 +1,55 @@
+/* Edit Mode Styles */
+.edit-btn {
+  background: #f59e0b !important;
+  color: white !important;
+}
+
+.edit-btn:hover {
+  background: #d97706 !important;
+}
+
+.cancel-btn {
+  background: #6c757d !important;
+  color: white !important;
+}
+
+.cancel-btn:hover {
+  background: #5a6268 !important;
+}
+
+.save-btn {
+  background: #0b3d91 !important;
+  color: white !important;
+}
+
+.save-btn:hover:not(:disabled) {
+  background: #082d6b !important;
+}
+
+/* Unsaved changes indicator */
+.form-subtitle.unsaved {
+  color: #f59e0b;
+  font-weight: 600;
+}
+
+/* Disabled state for buttons */
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Input focus styles for edit mode */
+.form-group input:not([readonly]):focus {
+  border-color: #0b3d91;
+  box-shadow: 0 0 0 3px rgba(11, 61, 145, 0.1);
+}
+
+/* Checkbox disabled state */
+.checkbox-label input:disabled + span {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 /* Certificate Page Layout */
 .certificate-page {
   max-width: 1400px;
