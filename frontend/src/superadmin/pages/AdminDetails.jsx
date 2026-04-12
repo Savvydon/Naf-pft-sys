@@ -1,3 +1,4 @@
+// ============ FIXED AdminDetails.jsx ============
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import "../styles/superadmin.css";
@@ -17,16 +18,20 @@ export default function AdminDetails() {
 
   const fetchDetails = async () => {
     try {
+      setLoading(true);
       const res = await fetch(`${API_BASE}/superadmin/admins/${id}`, {
-        credentials: "include"
+        credentials: "include",
       });
 
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.detail || `Failed to fetch (status ${res.status})`);
+        throw new Error(
+          errorData.detail || `Failed to fetch (status ${res.status})`,
+        );
       }
 
       const result = await res.json();
+      console.log("Admin details fetched:", result); // Debug log
       setData(result);
     } catch (err) {
       setError(err.message);
@@ -40,24 +45,46 @@ export default function AdminDetails() {
   if (error) return <div className="error">Error: {error}</div>;
   if (!data) return <div className="not-found">Admin not found</div>;
 
+  // FIXED: Ensure certificates array exists
+  const certificates = data.certificates || [];
+  const certificatesCount = data.certificates_count || certificates.length || 0;
+
   return (
     <div className="superadmin-container">
       <h2>Admin Details</h2>
 
       {/* Admin Info Card */}
       <div className="details-card">
-        <h3>{data.admin?.full_name || data.admin?.username}</h3>
-        <p><strong>Service Number:</strong> {data.admin?.svc_no || "N/A"}</p>
-        <p><strong>Rank:</strong> {data.admin?.rank || "N/A"}</p>
-        <p><strong>Email:</strong> {data.admin?.email || "N/A"}</p>
-        <p><strong>Unit:</strong> {data.admin?.unit || "N/A"}</p>
-        <p><strong>Total Certificates Issued:</strong> {data.certificates_count || 0}</p>
+        <h3>{data.admin?.full_name || "Unknown"}</h3>
+        <p>
+          <strong>Service Number:</strong> {data.admin?.svc_no || "N/A"}
+        </p>
+        <p>
+          <strong>Rank:</strong> {data.admin?.rank || "N/A"}
+        </p>
+        <p>
+          <strong>Email:</strong> {data.admin?.email || "N/A"}
+        </p>
+        <p>
+          <strong>Role:</strong> {data.admin?.role || "admin"}
+        </p>
+        <p>
+          <strong>Total Certificates Issued:</strong>
+          <span
+            className={`badge ${certificatesCount > 0 ? "active" : "zero"}`}
+            style={{ marginLeft: "10px" }}
+          >
+            {certificatesCount}
+          </span>
+        </p>
       </div>
 
       {/* Certificates Issued History */}
       <h3>Certificates Issued History</h3>
-      {data.certificates?.length === 0 ? (
-        <p>No certificates issued yet.</p>
+      {certificates.length === 0 ? (
+        <div className="empty-state">
+          <p>No certificates issued yet.</p>
+        </div>
       ) : (
         <table className="data-table">
           <thead>
@@ -73,27 +100,38 @@ export default function AdminDetails() {
             </tr>
           </thead>
           <tbody>
-            {data.certificates?.map((cert, index) => (
+            {certificates.map((cert, index) => (
               <tr key={cert.id}>
-                <td><strong>{index + 1}</strong></td>
-                <td>{cert.certificate_number}</td>
-                <td>{cert.personnel_name}</td>
-                <td>{cert.personnel_svc_no}</td>
-                <td>{cert.personnel_rank}</td>
-                <td>{cert.personnel_unit}</td>
                 <td>
-                  <span className={`status-badge ${cert.status?.toLowerCase()}`}>
+                  <strong>{index + 1}</strong>
+                </td>
+                <td>{cert.certificate_number || "N/A"}</td>
+                <td>{cert.personnel_name || "N/A"}</td>
+                <td>{cert.personnel_svc_no || "N/A"}</td>
+                <td>{cert.personnel_rank || "N/A"}</td>
+                <td>{cert.personnel_unit || "N/A"}</td>
+                <td>
+                  <span
+                    className={`status-badge ${cert.status?.toLowerCase().replace(" ", "") || "issued"}`}
+                  >
                     {cert.status || "Issued"}
                   </span>
                 </td>
-                <td>{new Date(cert.created_at).toLocaleDateString()}</td>
+                <td>
+                  {cert.created_at
+                    ? new Date(cert.created_at).toLocaleDateString()
+                    : "N/A"}
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       )}
 
-      <button onClick={() => navigate("/superadmin/admins")} className="back-btn">
+      <button
+        onClick={() => navigate("/superadmin/admins")}
+        className="back-btn"
+      >
         ← Back to Admins
       </button>
     </div>

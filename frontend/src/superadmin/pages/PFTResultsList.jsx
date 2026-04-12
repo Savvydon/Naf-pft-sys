@@ -1,5 +1,5 @@
-
-import { useEffect, useState } from "react";
+// ============ FIXED PFTResultsList.jsx ============
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/superadmin.css";
 import { checkCertificateExists } from "../../services/certificateApi";
@@ -19,7 +19,7 @@ const Pagination = ({ page, setPage, totalPages }) => {
         className={`page-btn ${page === i ? "active" : ""}`}
       >
         {i}
-      </button>
+      </button>,
     );
   }
 
@@ -51,7 +51,8 @@ export default function PFTResultsList() {
   const [error, setError] = useState(null);
   const [page, setPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
-  const [certStatus, setCertStatus] = useState({});  // ← NEW: Certificate status state
+  const [certStatus, setCertStatus] = useState({});
+  const [loadingCerts, setLoadingCerts] = useState(false);
   const navigate = useNavigate();
 
   const itemsPerPage = 10;
@@ -61,20 +62,33 @@ export default function PFTResultsList() {
     fetchResults();
   }, []);
 
-  // Check certificate status for all records  // ← NEW
+  // FIXED: Check certificate status with better implementation
+  const checkCertificates = useCallback(async (records) => {
+    if (!records || records.length === 0) return;
+
+    setLoadingCerts(true);
+    const newCertStatus = {};
+
+    await Promise.all(
+      records.map(async (r) => {
+        try {
+          const result = await checkCertificateExists(r.id);
+          newCertStatus[r.id] = result;
+        } catch (err) {
+          console.error(`Failed to check certificate for ${r.id}:`, err);
+          newCertStatus[r.id] = { exists: false };
+        }
+      }),
+    );
+
+    setCertStatus(newCertStatus);
+    setLoadingCerts(false);
+  }, []);
+
+  // Check certificates when results change
   useEffect(() => {
-    results.forEach(async (r) => {
-      try {
-        const result = await checkCertificateExists(r.id);
-        setCertStatus(prev => ({
-          ...prev,
-          [r.id]: result
-        }));
-      } catch (err) {
-        // Ignore errors
-      }
-    });
-  }, [results]);
+    checkCertificates(results);
+  }, [results, checkCertificates]);
 
   // Filter results when search changes
   useEffect(() => {
@@ -82,12 +96,13 @@ export default function PFTResultsList() {
       setFilteredResults(results);
     } else {
       const query = searchQuery.toLowerCase().trim();
-      const filtered = results.filter((r) =>
-        r.full_name?.toLowerCase().includes(query) ||
-        r.svc_no?.toLowerCase().includes(query) ||
-        r.year?.toString().includes(query) ||
-        r.grade?.toLowerCase().includes(query) ||
-        r.evaluator_name?.toLowerCase().includes(query)
+      const filtered = results.filter(
+        (r) =>
+          r.full_name?.toLowerCase().includes(query) ||
+          r.svc_no?.toLowerCase().includes(query) ||
+          r.year?.toString().includes(query) ||
+          r.grade?.toLowerCase().includes(query) ||
+          r.evaluator_name?.toLowerCase().includes(query),
       );
       setFilteredResults(filtered);
     }
@@ -127,11 +142,14 @@ export default function PFTResultsList() {
 
       const updated = results.filter((r) => r.id !== id);
       setResults(updated);
-      setFilteredResults(updated.filter((r) =>
-        searchQuery.trim() === "" ||
-        r.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        r.svc_no?.toLowerCase().includes(searchQuery.toLowerCase())
-      ));
+      setFilteredResults(
+        updated.filter(
+          (r) =>
+            searchQuery.trim() === "" ||
+            r.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            r.svc_no?.toLowerCase().includes(searchQuery.toLowerCase()),
+        ),
+      );
 
       alert("Result deleted successfully");
     } catch (err) {
@@ -143,10 +161,9 @@ export default function PFTResultsList() {
     navigate(`/superadmin/pft-results/${id}/certificate`);
   };
 
-  // ← NEW: Handle view certificate
   const handleViewCert = (certId) => {
     const resultId = Object.keys(certStatus).find(
-      key => certStatus[key].certificate_id === certId
+      (key) => certStatus[key].certificate_id === certId,
     );
     if (resultId) {
       navigate(`/superadmin/pft-results/${resultId}/certificate`);
@@ -162,7 +179,10 @@ export default function PFTResultsList() {
   };
 
   const startIndex = (page - 1) * itemsPerPage;
-  const paginatedData = filteredResults.slice(startIndex, startIndex + itemsPerPage);
+  const paginatedData = filteredResults.slice(
+    startIndex,
+    startIndex + itemsPerPage,
+  );
   const totalPages = Math.ceil(filteredResults.length / itemsPerPage);
 
   if (loading) return <div className="loading">Loading results...</div>;
@@ -188,8 +208,11 @@ export default function PFTResultsList() {
           <span>No records found</span>
         ) : (
           <span>
-            Showing {startIndex + 1}–{Math.min(startIndex + itemsPerPage, filteredResults.length)} of{" "}
-            {filteredResults.length} result{filteredResults.length !== 1 ? "s" : ""}
+            Showing {startIndex + 1}–
+            {Math.min(startIndex + itemsPerPage, filteredResults.length)} of{" "}
+            {filteredResults.length} result
+            {filteredResults.length !== 1 ? "s" : ""}
+            {loadingCerts && " (checking certificates...)"}
           </span>
         )}
       </div>
@@ -210,19 +233,25 @@ export default function PFTResultsList() {
                 <th>Year</th>
                 <th>Grade</th>
                 <th>Evaluator</th>
-                <th>Certificate</th>  {/* ← NEW COLUMN */}
+                <th>Certificate</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {paginatedData.map((r, index) => {
-                const certInfo = certStatus[r.id];  // ← NEW
-                const hasCert = certInfo?.exists;   // ← NEW
+                const certInfo = certStatus[r.id];
+                const hasCert = certInfo?.exists;
 
                 return (
                   <tr key={r.id}>
-                    <td><strong>{(page - 1) * itemsPerPage + index + 1}</strong></td>
-                    <td><span style={{ color: "#999", fontSize: "0.85em" }}>#{r.id}</span></td>
+                    <td>
+                      <strong>{(page - 1) * itemsPerPage + index + 1}</strong>
+                    </td>
+                    <td>
+                      <span style={{ color: "#999", fontSize: "0.85em" }}>
+                        #{r.id}
+                      </span>
+                    </td>
                     <td>{r.full_name}</td>
                     <td>{r.svc_no}</td>
                     <td>{r.year}</td>
@@ -230,31 +259,40 @@ export default function PFTResultsList() {
                     <td>
                       {r.evaluator_name} ({r.evaluator_rank})
                     </td>
-                    {/* ← NEW: Certificate Column */}
                     <td>
                       {hasCert ? (
-                        <span 
+                        <span
                           className="cert-badge issued"
-                          onClick={() => handleViewCert(certInfo.certificate_id)}
-                          style={{ cursor: 'pointer' }}
+                          onClick={() =>
+                            handleViewCert(certInfo.certificate_id)
+                          }
+                          style={{ cursor: "pointer" }}
+                          title={`Certificate: ${certInfo.certificate_number}`}
                         >
-                          ✓ {certInfo.certificate_number?.split('/').pop()}
+                          ✓ {certInfo.certificate_number}
                         </span>
                       ) : (
                         <span className="cert-badge none">—</span>
                       )}
                     </td>
                     <td className="actions">
-                      <button onClick={() => handleViewDetails(r.id)} className="view-btn">
+                      <button
+                        onClick={() => handleViewDetails(r.id)}
+                        className="view-btn"
+                      >
                         View
                       </button>
-                      <button onClick={() => handleEdit(r.id)} className="edit-btn">
+                      <button
+                        onClick={() => handleEdit(r.id)}
+                        className="edit-btn"
+                      >
                         Edit
                       </button>
-                      {/* ← UPDATED: Conditional Issue/View Cert button */}
                       {hasCert ? (
                         <button
-                          onClick={() => handleViewCert(certInfo.certificate_id)}
+                          onClick={() =>
+                            handleViewCert(certInfo.certificate_id)
+                          }
                           className="view-cert-btn"
                         >
                           View Cert
@@ -267,7 +305,10 @@ export default function PFTResultsList() {
                           Issue Cert
                         </button>
                       )}
-                      <button onClick={() => handleDelete(r.id)} className="delete-btn">
+                      <button
+                        onClick={() => handleDelete(r.id)}
+                        className="delete-btn"
+                      >
                         Delete
                       </button>
                     </td>

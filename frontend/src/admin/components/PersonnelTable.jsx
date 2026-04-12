@@ -1,6 +1,6 @@
 import "../styles/Admin.css";
 import { useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { checkCertificateExists } from "../../services/certificateApi";
 
 // Pagination Component
@@ -16,7 +16,7 @@ const Pagination = ({ page, setPage, totalPages }) => {
         className={`page-btn ${page === i ? "active" : ""}`}
       >
         {i}
-      </button>
+      </button>,
     );
   }
 
@@ -47,6 +47,7 @@ export default function PersonnelTable({ data, onDelete }) {
   const [page, setPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredData, setFilteredData] = useState(data);
+  const [loadingCerts, setLoadingCerts] = useState(false);
 
   const itemsPerPage = 10;
 
@@ -61,48 +62,55 @@ export default function PersonnelTable({ data, onDelete }) {
       setFilteredData(data);
     } else {
       const query = searchQuery.toLowerCase().trim();
-      const filtered = data.filter((p) =>
-        p.full_name?.toLowerCase().includes(query) ||
-        p.svc_no?.toLowerCase().includes(query) ||
-        p.year?.toString().includes(query) ||
-        p.grade?.toLowerCase().includes(query) ||
-        p.sex?.toLowerCase().includes(query)
+      const filtered = data.filter(
+        (p) =>
+          p.full_name?.toLowerCase().includes(query) ||
+          p.svc_no?.toLowerCase().includes(query) ||
+          p.year?.toString().includes(query) ||
+          p.grade?.toLowerCase().includes(query) ||
+          p.sex?.toLowerCase().includes(query),
       );
       setFilteredData(filtered);
     }
     setPage(1);
   }, [searchQuery, data]);
 
-  // Check certificate status for all records
-  useEffect(() => {
-    data.forEach(async (p) => {
-      try {
-        const result = await checkCertificateExists(p.id);
-        setCertStatus(prev => ({
-          ...prev,
-          [p.id]: result
-        }));
-      } catch (err) {
-        // Ignore errors
-      }
-    });
+  // FIXED: Check certificate status with better error handling and loading state
+  const checkCertificates = useCallback(async () => {
+    if (!data || data.length === 0) return;
+
+    setLoadingCerts(true);
+    const newCertStatus = {};
+
+    // Check all certificates in parallel for better performance
+    await Promise.all(
+      data.map(async (p) => {
+        try {
+          const result = await checkCertificateExists(p.id);
+          newCertStatus[p.id] = result;
+        } catch (err) {
+          console.error(`Failed to check certificate for ${p.id}:`, err);
+          newCertStatus[p.id] = { exists: false };
+        }
+      }),
+    );
+
+    setCertStatus(newCertStatus);
+    setLoadingCerts(false);
   }, [data]);
 
-  // FIXED: Correct route for issuing certificate
+  // Check certificates when data changes
+  useEffect(() => {
+    checkCertificates();
+  }, [checkCertificates]);
+
   const handleIssue = (id) => {
     navigate(`/admin/personnel/${id}/certificate`);
   };
 
-  // FIXED: Correct route for viewing certificate (if you have a view route)
-  // If viewing uses the same component as issuing, adjust as needed
   const handleViewCert = (certId) => {
-    // Option 1: If you have a separate view route
-    // navigate(`/admin/certificates/${certId}`);
-    
-    // Option 2: If viewing is the same as issuing (edit mode)
-    // Find the personnel id from certStatus and navigate to issue route
     const personnelId = Object.keys(certStatus).find(
-      key => certStatus[key].certificate_id === certId
+      (key) => certStatus[key].certificate_id === certId,
     );
     if (personnelId) {
       navigate(`/admin/personnel/${personnelId}/certificate`);
@@ -110,7 +118,10 @@ export default function PersonnelTable({ data, onDelete }) {
   };
 
   const startIndex = (page - 1) * itemsPerPage;
-  const paginatedData = filteredData.slice(startIndex, startIndex + itemsPerPage);
+  const paginatedData = filteredData.slice(
+    startIndex,
+    startIndex + itemsPerPage,
+  );
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
 
   return (
@@ -133,8 +144,10 @@ export default function PersonnelTable({ data, onDelete }) {
           <span>No records found</span>
         ) : (
           <span>
-            Showing {startIndex + 1}–{Math.min(startIndex + itemsPerPage, filteredData.length)} of{" "}
+            Showing {startIndex + 1}–
+            {Math.min(startIndex + itemsPerPage, filteredData.length)} of{" "}
             {filteredData.length} record{filteredData.length !== 1 ? "s" : ""}
+            {loadingCerts && " (checking certificates...)"}
           </span>
         )}
       </div>
@@ -168,8 +181,14 @@ export default function PersonnelTable({ data, onDelete }) {
 
                 return (
                   <tr key={p.id}>
-                    <td><strong>{startIndex + index + 1}</strong></td>
-                    <td><span style={{ color: "#999", fontSize: "0.85em" }}>#{p.id}</span></td>
+                    <td>
+                      <strong>{startIndex + index + 1}</strong>
+                    </td>
+                    <td>
+                      <span style={{ color: "#999", fontSize: "0.85em" }}>
+                        #{p.id}
+                      </span>
+                    </td>
                     <td>{p.full_name}</td>
                     <td>{p.sex}</td>
                     <td>{p.svc_no}</td>
@@ -178,12 +197,15 @@ export default function PersonnelTable({ data, onDelete }) {
                     <td>{p.grade}</td>
                     <td>
                       {hasCert ? (
-                        <span 
+                        <span
                           className="cert-badge issued"
-                          onClick={() => handleViewCert(certInfo.certificate_id)}
-                          style={{ cursor: 'pointer' }}
+                          onClick={() =>
+                            handleViewCert(certInfo.certificate_id)
+                          }
+                          style={{ cursor: "pointer" }}
+                          title={`Certificate: ${certInfo.certificate_number}`}
                         >
-                          ✓ {certInfo.certificate_number?.split('/').pop()}
+                          ✓ {certInfo.certificate_number}
                         </span>
                       ) : (
                         <span className="cert-badge none">—</span>
@@ -199,7 +221,9 @@ export default function PersonnelTable({ data, onDelete }) {
 
                       <button
                         className="edit-btn"
-                        onClick={() => navigate(`/admin/personnel/${p.id}/edit`)}
+                        onClick={() =>
+                          navigate(`/admin/personnel/${p.id}/edit`)
+                        }
                       >
                         Edit
                       </button>
@@ -207,7 +231,9 @@ export default function PersonnelTable({ data, onDelete }) {
                       {hasCert ? (
                         <button
                           className="view-cert-btn"
-                          onClick={() => handleViewCert(certInfo.certificate_id)}
+                          onClick={() =>
+                            handleViewCert(certInfo.certificate_id)
+                          }
                         >
                           View Cert
                         </button>
