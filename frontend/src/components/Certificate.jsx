@@ -274,158 +274,289 @@ export default function Certificate({ fromSuperAdmin = false }) {
   };
 
   // Generate PDF
+  // const generatePDF = async () => {
+  //   const input = certRef.current;
+  //   if (!input) return null;
+
+  //   const originalStyles = {
+  //     transform: input.style.transform,
+  //     width: input.style.width,
+  //     maxWidth: input.style.maxWidth,
+  //     height: input.style.height,
+  //     overflow: input.style.overflow,
+  //   };
+
+  //   input.style.transform = "none";
+  //   input.style.width = "850px";
+  //   input.style.maxWidth = "850px";
+  //   input.style.height = "auto";
+  //   input.style.overflow = "visible";
+  //   input.classList.add("pdf-mode");
+
+  //   await new Promise((r) => setTimeout(r, 500));
+
+  //   try {
+  //     const contentHeight = input.scrollHeight;
+  //     const canvas = await html2canvas(input, {
+  //       scale: 2,
+  //       useCORS: true,
+  //       backgroundColor: "#FAF9F6",
+  //       width: 850,
+  //       height: contentHeight,
+  //       windowWidth: 850,
+  //       windowHeight: contentHeight,
+  //     });
+
+  //     const pdf = new jsPDF("p", "mm", "a4");
+  //     const imgData = canvas.toDataURL("image/jpeg", 0.95);
+  //     const pageWidth = pdf.internal.pageSize.getWidth();
+  //     const pageHeight = pdf.internal.pageSize.getHeight();
+  //     const imgWidth = pageWidth - 20;
+  //     const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+  //     if (imgHeight > pageHeight - 20) {
+  //       const scaleFactor = (pageHeight - 20) / imgHeight;
+  //       const finalWidth = imgWidth * scaleFactor;
+  //       const finalHeight = imgHeight * scaleFactor;
+  //       const xOffset = (pageWidth - finalWidth) / 2;
+  //       pdf.addImage(imgData, "JPEG", xOffset, 10, finalWidth, finalHeight);
+  //     } else {
+  //       const yOffset = (pageHeight - imgHeight) / 2;
+  //       pdf.addImage(imgData, "JPEG", 10, yOffset, imgWidth, imgHeight);
+  //     }
+
+  //     const certNum = certificate?.certificate_number?.split("HQ")[1] || "DRAFT";
+  //     pdf.save(`NAF_PFT_Certificate_${result?.svc_no || "PERSONNEL"}_${certNum}.pdf`);
+  //   } finally {
+  //     Object.assign(input.style, originalStyles);
+  //     input.classList.remove("pdf-mode");
+  //   }
+  // };
+
+
+
   const generatePDF = async () => {
-    const input = certRef.current;
-    if (!input) return null;
+  const input = certRef.current;
+  if (!input) return;
 
-    const originalStyles = {
-      transform: input.style.transform,
-      width: input.style.width,
-      maxWidth: input.style.maxWidth,
-      height: input.style.height,
-      overflow: input.style.overflow,
-    };
+  const originalStyles = {
+    transform: input.style.transform,
+    width: input.style.width,
+    maxWidth: input.style.maxWidth,
+    height: input.style.height,
+    overflow: input.style.overflow,
+  };
 
-    input.style.transform = "none";
-    input.style.width = "850px";
-    input.style.maxWidth = "850px";
-    input.style.height = "auto";
-    input.style.overflow = "visible";
+  try {
+    // ✅ Apply PDF mode (CSS handles layout)
     input.classList.add("pdf-mode");
 
-    await new Promise((r) => setTimeout(r, 500));
+    // ✅ Wait for fonts & layout
+    await document.fonts.ready;
+    await new Promise((r) => setTimeout(r, 300));
 
-    try {
-      const contentHeight = input.scrollHeight;
-      const canvas = await html2canvas(input, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: "#FAF9F6",
-        width: 850,
-        height: contentHeight,
-        windowWidth: 850,
-        windowHeight: contentHeight,
-      });
+    // ✅ Capture EXACT size (no forced width/height)
+    const canvas = await html2canvas(input, {
+      scale: 3, // higher quality
+      useCORS: true,
+      backgroundColor: "#FAF9F6",
+      scrollX: 0,
+      scrollY: 0,
+    });
 
-      const pdf = new jsPDF("p", "mm", "a4");
-      const imgData = canvas.toDataURL("image/jpeg", 0.95);
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      const imgWidth = pageWidth - 20;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    const imgData = canvas.toDataURL("image/jpeg", 1.0);
 
-      if (imgHeight > pageHeight - 20) {
-        const scaleFactor = (pageHeight - 20) / imgHeight;
-        const finalWidth = imgWidth * scaleFactor;
-        const finalHeight = imgHeight * scaleFactor;
-        const xOffset = (pageWidth - finalWidth) / 2;
-        pdf.addImage(imgData, "JPEG", xOffset, 10, finalWidth, finalHeight);
-      } else {
-        const yOffset = (pageHeight - imgHeight) / 2;
-        pdf.addImage(imgData, "JPEG", 10, yOffset, imgWidth, imgHeight);
-      }
+    const pdf = new jsPDF("p", "mm", "a4");
 
-      const certNum = certificate?.certificate_number?.split("HQ")[1] || "DRAFT";
-      pdf.save(`NAF_PFT_Certificate_${result?.svc_no || "PERSONNEL"}_${certNum}.pdf`);
-    } finally {
-      Object.assign(input.style, originalStyles);
-      input.classList.remove("pdf-mode");
-    }
-  };
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+
+    const imgWidth = pageWidth - 20;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+    // ✅ DO NOT over-compress — keep proportions
+    pdf.addImage(imgData, "JPEG", 10, 10, imgWidth, imgHeight);
+
+    const certNum =
+      certificate?.certificate_number?.split("HQ")[1] || "DRAFT";
+
+    pdf.save(
+      `NAF_PFT_Certificate_${result?.svc_no || "PERSONNEL"}_${certNum}.pdf`
+    );
+  } catch (err) {
+    console.error(err);
+    alert("Failed to generate PDF");
+  } finally {
+    input.classList.remove("pdf-mode");
+    Object.assign(input.style, originalStyles);
+  }
+};
 
   // Send certificate via email
-  const sendCertificate = async () => {
-    if (!result?.email) {
-      alert("No email address found for this personnel.");
-      return;
-    }
+  // const sendCertificate = async () => {
+  //   if (!result?.email) {
+  //     alert("No email address found for this personnel.");
+  //     return;
+  //   }
 
-    setIsSending(true);
-    const input = certRef.current;
-    if (!input) {
-      setIsSending(false);
-      return;
-    }
+  //   setIsSending(true);
+  //   const input = certRef.current;
+  //   if (!input) {
+  //     setIsSending(false);
+  //     return;
+  //   }
 
-    const originalStyles = {
-      transform: input.style.transform,
-      width: input.style.width,
-      maxWidth: input.style.maxWidth,
-      height: input.style.height,
-      overflow: input.style.overflow,
-    };
+  //   const originalStyles = {
+  //     transform: input.style.transform,
+  //     width: input.style.width,
+  //     maxWidth: input.style.maxWidth,
+  //     height: input.style.height,
+  //     overflow: input.style.overflow,
+  //   };
 
-    try {
-      input.style.transform = "none";
-      input.style.width = "850px";
-      input.style.maxWidth = "850px";
-      input.style.height = "auto";
-      input.style.overflow = "visible";
-      input.classList.add("pdf-mode");
+  //   try {
+  //     input.style.transform = "none";
+  //     input.style.width = "850px";
+  //     input.style.maxWidth = "850px";
+  //     input.style.height = "auto";
+  //     input.style.overflow = "visible";
+  //     input.classList.add("pdf-mode");
 
-      await new Promise((r) => setTimeout(r, 500));
+  //     await new Promise((r) => setTimeout(r, 500));
 
-      const contentHeight = input.scrollHeight;
-      const canvas = await html2canvas(input, {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: "#FAF9F6",
-        width: 850,
-        height: contentHeight,
-        windowWidth: 850,
-        windowHeight: contentHeight,
-      });
+  //     const contentHeight = input.scrollHeight;
+  //     const canvas = await html2canvas(input, {
+  //       scale: 2,
+  //       useCORS: true,
+  //       backgroundColor: "#FAF9F6",
+  //       width: 850,
+  //       height: contentHeight,
+  //       windowWidth: 850,
+  //       windowHeight: contentHeight,
+  //     });
 
-      const pdf = new jsPDF("p", "mm", "a4");
-      const imgData = canvas.toDataURL("image/jpeg", 0.95);
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      const imgWidth = pageWidth - 20;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+  //     const pdf = new jsPDF("p", "mm", "a4");
+  //     const imgData = canvas.toDataURL("image/jpeg", 0.95);
+  //     const pageWidth = pdf.internal.pageSize.getWidth();
+  //     const pageHeight = pdf.internal.pageSize.getHeight();
+  //     const imgWidth = pageWidth - 20;
+  //     const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-      if (imgHeight > pageHeight - 20) {
-        const scaleFactor = (pageHeight - 20) / imgHeight;
-        const finalWidth = imgWidth * scaleFactor;
-        const finalHeight = imgHeight * scaleFactor;
-        const xOffset = (pageWidth - finalWidth) / 2;
-        pdf.addImage(imgData, "JPEG", xOffset, 10, finalWidth, finalHeight);
-      } else {
-        const yOffset = (pageHeight - imgHeight) / 2;
-        pdf.addImage(imgData, "JPEG", 10, yOffset, imgWidth, imgHeight);
-      }
+  //     if (imgHeight > pageHeight - 20) {
+  //       const scaleFactor = (pageHeight - 20) / imgHeight;
+  //       const finalWidth = imgWidth * scaleFactor;
+  //       const finalHeight = imgHeight * scaleFactor;
+  //       const xOffset = (pageWidth - finalWidth) / 2;
+  //       pdf.addImage(imgData, "JPEG", xOffset, 10, finalWidth, finalHeight);
+  //     } else {
+  //       const yOffset = (pageHeight - imgHeight) / 2;
+  //       pdf.addImage(imgData, "JPEG", 10, yOffset, imgWidth, imgHeight);
+  //     }
 
-      const pdfBlob = pdf.output("blob");
-      if (pdfBlob.size > 4.5 * 1024 * 1024) {
-        alert("Certificate PDF is too large for email. Please download and send manually.");
-        return;
-      }
+  //     const pdfBlob = pdf.output("blob");
+  //     if (pdfBlob.size > 4.5 * 1024 * 1024) {
+  //       alert("Certificate PDF is too large for email. Please download and send manually.");
+  //       return;
+  //     }
 
-      const certNum = certificate?.certificate_number || "DRAFT";
+  //     const certNum = certificate?.certificate_number || "DRAFT";
       
-      const formDataObj = new FormData();
-      formDataObj.append("email", result.email);
-      formDataObj.append("file", pdfBlob, `NAF_PFT_Certificate_${certNum}.pdf`);
-      formDataObj.append("personnel_name", result.full_name || "");
-      formDataObj.append("certificate_type", "pft_certificate");
-      formDataObj.append("certificate_number", certNum);
+  //     const formDataObj = new FormData();
+  //     formDataObj.append("email", result.email);
+  //     formDataObj.append("file", pdfBlob, `NAF_PFT_Certificate_${certNum}.pdf`);
+  //     formDataObj.append("personnel_name", result.full_name || "");
+  //     formDataObj.append("certificate_type", "pft_certificate");
+  //     formDataObj.append("certificate_number", certNum);
 
-      const res = await fetch(`${API_BASE}/send-certificate-pdf`, {
-        method: "POST",
-        credentials: "include",
-        body: formDataObj,
-      });
+  //     const res = await fetch(`${API_BASE}/send-certificate-pdf`, {
+  //       method: "POST",
+  //       credentials: "include",
+  //       body: formDataObj,
+  //     });
 
-      if (!res.ok) throw new Error("Failed to send email");
+  //     if (!res.ok) throw new Error("Failed to send email");
 
-      alert(`Certificate sent successfully to ${result.email}`);
-    } catch (err) {
-      alert("Failed to send certificate: " + err.message);
-    } finally {
-      Object.assign(input.style, originalStyles);
-      input.classList.remove("pdf-mode");
-      setIsSending(false);
+  //     alert(`Certificate sent successfully to ${result.email}`);
+  //   } catch (err) {
+  //     alert("Failed to send certificate: " + err.message);
+  //   } finally {
+  //     Object.assign(input.style, originalStyles);
+  //     input.classList.remove("pdf-mode");
+  //     setIsSending(false);
+  //   }
+  // };
+
+
+  const sendCertificate = async () => {
+  if (!result?.email) {
+    alert("No email address found for this personnel.");
+    return;
+  }
+
+  setIsSending(true);
+
+  const input = certRef.current;
+  if (!input) {
+    setIsSending(false);
+    return;
+  }
+
+  try {
+    input.classList.add("pdf-mode");
+
+    await document.fonts.ready;
+    await new Promise((r) => setTimeout(r, 300));
+
+    const canvas = await html2canvas(input, {
+      scale: 3,
+      useCORS: true,
+      backgroundColor: "#FAF9F6",
+      scrollX: 0,
+      scrollY: 0,
+    });
+
+    const pdf = new jsPDF("p", "mm", "a4");
+
+    const imgData = canvas.toDataURL("image/jpeg", 1.0);
+
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const imgWidth = pageWidth - 20;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+    pdf.addImage(imgData, "JPEG", 10, 10, imgWidth, imgHeight);
+
+    const pdfBlob = pdf.output("blob");
+
+    if (pdfBlob.size > 4.5 * 1024 * 1024) {
+      alert("PDF too large. Please download instead.");
+      return;
     }
-  };
+
+    const certNum = certificate?.certificate_number || "DRAFT";
+
+    const formDataObj = new FormData();
+    formDataObj.append("email", result.email);
+    formDataObj.append("file", pdfBlob, `NAF_PFT_Certificate_${certNum}.pdf`);
+    formDataObj.append("personnel_name", result.full_name || "");
+    formDataObj.append("certificate_type", "pft_certificate");
+    formDataObj.append("certificate_number", certNum);
+
+    const res = await fetch(`${API_BASE}/send-certificate-pdf`, {
+      method: "POST",
+      credentials: "include",
+      body: formDataObj,
+    });
+
+    if (!res.ok) throw new Error("Failed to send email");
+
+    alert(`Certificate sent successfully to ${result.email}`);
+  } catch (err) {
+    alert("Failed to send certificate: " + err.message);
+  } finally {
+    input.classList.remove("pdf-mode");
+    setIsSending(false);
+  }
+};
 
   const handleBack = () => {
     if (isSuperAdmin) {
