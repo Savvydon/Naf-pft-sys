@@ -69,6 +69,12 @@ export default function Certificate({ fromSuperAdmin = false }) {
   });
 
   const isSuperAdmin = fromSuperAdmin || location.pathname.includes("/superadmin/");
+  
+  // ✅ FIXED: Add proper permission checks
+  const canIssueCertificate = currentUser?.role === 'admin' || currentUser?.role === 'super_admin';
+  const canEditCertificate = currentUser?.role === 'admin' || currentUser?.role === 'super_admin';
+  const canModifyCertificate = canEditCertificate; // Alias for clarity
+  
   const isSaved = !!certificate;
   
   // Generate watermark array (memoized)
@@ -97,7 +103,7 @@ export default function Certificate({ fromSuperAdmin = false }) {
             issuedYear: certDetails.issued_year?.slice(-2) || ""
           });
         } else if (mounted) {
-          // No existing certificate - set defaults
+          // ✅ FIXED: Auto-enter edit mode for new certificates if user has permission
           const defaultDate = getDefaultDate();
           setFormData(prev => ({
             ...prev,
@@ -105,6 +111,10 @@ export default function Certificate({ fromSuperAdmin = false }) {
             issuedMonth: defaultDate.month,
             issuedYear: defaultDate.year
           }));
+          // Auto-enable editing for new certs if user can issue
+          if (canIssueCertificate) {
+            setIsEditing(true);
+          }
         }
       } catch (err) {
         console.error("Failed to check certificate:", err);
@@ -114,7 +124,7 @@ export default function Certificate({ fromSuperAdmin = false }) {
     
     fetchCertificate();
     return () => { mounted = false; };
-  }, [id]);
+  }, [id, canIssueCertificate]);
 
   // Fetch PFT result
   useEffect(() => {
@@ -240,6 +250,10 @@ export default function Certificate({ fromSuperAdmin = false }) {
 
   // Enable edit mode
   const enableEditMode = () => {
+    if (!canEditCertificate) {
+      alert("You do not have permission to edit certificates.");
+      return;
+    }
     setIsEditing(true);
   };
 
@@ -583,7 +597,8 @@ export default function Certificate({ fromSuperAdmin = false }) {
             ← Back
           </button>
           
-          {isSaved && !isEditing && (
+          {/* ✅ FIXED: Only show Edit button if user has edit permission */}
+          {isSaved && !isEditing && canEditCertificate && (
             <button 
               onClick={enableEditMode} 
               className="btn edit-btn"
@@ -604,7 +619,8 @@ export default function Certificate({ fromSuperAdmin = false }) {
             </button>
           )}
 
-          {(isEditing || !isSaved) && (
+          {/* ✅ FIXED: Only show Save button if user has issue/edit permission */}
+          {(isEditing || !isSaved) && canModifyCertificate && (
             <button 
               onClick={handleSaveOrUpdate} 
               className="btn save-btn"
@@ -646,7 +662,9 @@ export default function Certificate({ fromSuperAdmin = false }) {
             textAlign: "center",
             fontWeight: "600"
           }}>
-            ✓ This certificate has been saved. Click "Edit Certificate" to make corrections.
+            ✓ This certificate has been saved. 
+            {canEditCertificate && " Click \"Edit Certificate\" to make corrections."}
+            {!canEditCertificate && " Contact an admin to make corrections."}
           </p>
         )}
         
@@ -658,7 +676,7 @@ export default function Certificate({ fromSuperAdmin = false }) {
             textAlign: "center",
             fontWeight: "600"
           }}>
-            ⚠ You have unsaved changes. Click "Update Certificate" to save.
+            ⚠ You have unsaved changes. Click "{isSaved ? 'Update Certificate' : 'Save Certificate'}" to save.
           </p>
         )}
       </div>
