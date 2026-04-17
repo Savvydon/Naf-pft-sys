@@ -1,3 +1,4 @@
+// frontend/src/App.jsx
 import { Routes, Route, Navigate, Outlet } from "react-router-dom";
 import { useAuth } from "./AuthContext";
 
@@ -23,7 +24,7 @@ import AdminsList from "./superadmin/pages/AdminsList";
 import CreateEvaluator from "./superadmin/pages/CreateEvaluator";
 import CreateAdmin from "./superadmin/pages/CreateAdmin";
 import EvaluatorDetails from "./superadmin/pages/EvaluatorDetails";
-import AdminDetails from "./superadmin/pages/AdminDetails";  // ← NEW IMPORT
+import AdminDetails from "./superadmin/pages/AdminDetails";
 import PFTResultsList from "./superadmin/pages/PFTResultsList";
 
 // Certificate Page
@@ -33,7 +34,7 @@ import Certificate from "./components/Certificate";
 import AdminProtectedRoute from "./admin/components/AdminProtectedRoute";
 import SuperAdminProtectedRoute from "./superadmin/components/SuperAdminProtectedRoute";
 
-// Protected Evaluator Route
+// ✅ MODIFIED: EvaluatorProtectedRoute - Only allows evaluators
 function EvaluatorProtectedRoute() {
   const { currentUser, authLoading } = useAuth();
 
@@ -41,14 +42,23 @@ function EvaluatorProtectedRoute() {
     return <div style={{ textAlign: "center", marginTop: "50px" }}>Authenticating...</div>;
   }
 
-  if (!currentUser) {
+  // Must be logged in AND role must be exactly "evaluator"
+  if (!currentUser || currentUser.role !== "evaluator") {
+    // Redirect admins to admin dashboard, super admins to superadmin dashboard
+    if (currentUser?.role === "admin") {
+      return <Navigate to="/admin/dashboard" replace />;
+    }
+    if (currentUser?.role === "super_admin") {
+      return <Navigate to="/superadmin/dashboard" replace />;
+    }
+    // Not logged in or unknown role -> login
     return <Navigate to="/login" replace />;
   }
 
   return <Outlet />;
 }
 
-// Redirect logged-in users away from login pages
+// ✅ MODIFIED: Redirect logged-in users away from login pages (role-aware)
 function EvaluatorLoginRedirect({ children }) {
   const { currentUser, authLoading } = useAuth();
 
@@ -61,7 +71,7 @@ function EvaluatorLoginRedirect({ children }) {
       return <Navigate to="/superadmin/dashboard" replace />;
     } else if (currentUser.role === "admin") {
       return <Navigate to="/admin/dashboard" replace />;
-    } else {
+    } else if (currentUser.role === "evaluator") {
       return <Navigate to="/" replace />;
     }
   }
@@ -91,7 +101,7 @@ export default function App() {
         <Route path="/superadmin/evaluators/:id" element={<EvaluatorDetails />} />
         <Route path="/superadmin/admins" element={<AdminsList />} />
         <Route path="/superadmin/admins/create" element={<CreateAdmin />} />
-        <Route path="/superadmin/admins/:id" element={<AdminDetails />} />  {/* ← NEW ROUTE */}
+        <Route path="/superadmin/admins/:id" element={<AdminDetails />} />
         <Route path="/superadmin/pft-results" element={<PFTResultsList />} />
 
         {/* Personnel / Result Detail & Edit */}
@@ -131,7 +141,7 @@ export default function App() {
         />
       </Route>
 
-      {/* ====================== EVALUATOR ROUTES ====================== */}
+      {/* ====================== EVALUATOR ROUTES (RESTRICTED) ====================== */}
       <Route
         path="/login"
         element={
@@ -141,6 +151,7 @@ export default function App() {
         }
       />
 
+      {/* ✅ MODIFIED: Only evaluators can access these routes */}
       <Route element={<EvaluatorProtectedRoute />}>
         <Route path="/" element={<PhysicalFitness />} />
         <Route path="/results" element={<Results />} />
