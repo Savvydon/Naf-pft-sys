@@ -5,16 +5,16 @@ import jsPDF from "jspdf";
 
 import airForceLogo from "../assets/airforce.png";
 import seal from "../assets/seal.png";
-import aocSignatureImg from "../assets/signature.png";
+import aocSignatureImg from "../assets/coaSignature.png";
 import sportsSignatureImg from "../assets/signature.png";
 
 import "../styles/Certificate.css";
 import { useAuth } from "../AuthContext";
-import { 
-  createCertificate, 
-  getCertificateByPFT, 
+import {
+  createCertificate,
+  getCertificateByPFT,
   checkCertificateExists,
-  updateCertificate
+  updateCertificate,
 } from "../services/certificateApi.js";
 
 const API_BASE = "https://naf-pft-sys-1.onrender.com";
@@ -23,19 +23,57 @@ const API_BASE = "https://naf-pft-sys-1.onrender.com";
 const getDefaultDate = () => {
   const now = new Date();
   const days = [
-    "1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th", "10th",
-    "11th", "12th", "13th", "14th", "15th", "16th", "17th", "18th", "19th", "20th",
-    "21st", "22nd", "23rd", "24th", "25th", "26th", "27th", "28th", "29th", "30th", "31st",
+    "1st",
+    "2nd",
+    "3rd",
+    "4th",
+    "5th",
+    "6th",
+    "7th",
+    "8th",
+    "9th",
+    "10th",
+    "11th",
+    "12th",
+    "13th",
+    "14th",
+    "15th",
+    "16th",
+    "17th",
+    "18th",
+    "19th",
+    "20th",
+    "21st",
+    "22nd",
+    "23rd",
+    "24th",
+    "25th",
+    "26th",
+    "27th",
+    "28th",
+    "29th",
+    "30th",
+    "31st",
   ];
   const months = [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December",
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
   ];
-  
+
   return {
     day: days[now.getDate() - 1] || `${now.getDate()}th`,
     month: months[now.getMonth()],
-    year: now.getFullYear().toString().slice(-2)
+    year: now.getFullYear().toString().slice(-2),
   };
 };
 
@@ -45,18 +83,18 @@ export default function Certificate({ fromSuperAdmin = false }) {
   const location = useLocation();
   const certRef = useRef(null);
   const { currentUser } = useAuth();
-  
+
   // Core data states
   const [result, setResult] = useState(null);
   const [certificate, setCertificate] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  
+
   // UI states
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isSending, setIsSending] = useState(false);
-  
+
   // Form data state - single source of truth
   const [formData, setFormData] = useState({
     rankAndName: "",
@@ -65,51 +103,55 @@ export default function Certificate({ fromSuperAdmin = false }) {
     location: "",
     issuedDay: "",
     issuedMonth: "",
-    issuedYear: ""
+    issuedYear: "",
   });
 
-  const isSuperAdmin = fromSuperAdmin || location.pathname.includes("/superadmin/");
-  
+  const isSuperAdmin =
+    fromSuperAdmin || location.pathname.includes("/superadmin/");
+
   // ✅ FIXED: Add proper permission checks
-  const canIssueCertificate = currentUser?.role === 'admin' || currentUser?.role === 'super_admin';
-  const canEditCertificate = currentUser?.role === 'admin' || currentUser?.role === 'super_admin';
+  const canIssueCertificate =
+    currentUser?.role === "admin" || currentUser?.role === "super_admin";
+  const canEditCertificate =
+    currentUser?.role === "admin" || currentUser?.role === "super_admin";
   const canModifyCertificate = canEditCertificate; // Alias for clarity
-  
+
   const isSaved = !!certificate;
-  
+
   // Generate watermark array (memoized)
   const watermarkArray = Array.from({ length: 250 }, (_, i) => i);
 
   // Fetch certificate data
   useEffect(() => {
     let mounted = true;
-    
+
     const fetchCertificate = async () => {
       try {
         const exists = await checkCertificateExists(id);
-        
+
         if (exists.exists && mounted) {
           const certDetails = await getCertificateByPFT(id);
           setCertificate(certDetails);
-          
+
           // Populate form with existing data
           setFormData({
-            rankAndName: `${certDetails.personnel_rank || ""} ${certDetails.personnel_name || ""}`.trim(),
+            rankAndName:
+              `${certDetails.personnel_rank || ""} ${certDetails.personnel_name || ""}`.trim(),
             participatedIn: certDetails.participated_in || "",
             status: certDetails.status || "",
             location: certDetails.location || "",
             issuedDay: certDetails.issued_day || "",
             issuedMonth: certDetails.issued_month || "",
-            issuedYear: certDetails.issued_year?.slice(-2) || ""
+            issuedYear: certDetails.issued_year?.slice(-2) || "",
           });
         } else if (mounted) {
           // ✅ FIXED: Auto-enter edit mode for new certificates if user has permission
           const defaultDate = getDefaultDate();
-          setFormData(prev => ({
+          setFormData((prev) => ({
             ...prev,
             issuedDay: defaultDate.day,
             issuedMonth: defaultDate.month,
-            issuedYear: defaultDate.year
+            issuedYear: defaultDate.year,
           }));
           // Auto-enable editing for new certs if user can issue
           if (canIssueCertificate) {
@@ -121,9 +163,11 @@ export default function Certificate({ fromSuperAdmin = false }) {
         // Continue with new certificate flow
       }
     };
-    
+
     fetchCertificate();
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, [id, canIssueCertificate]);
 
   // Fetch PFT result
@@ -137,9 +181,11 @@ export default function Certificate({ fromSuperAdmin = false }) {
       .then((data) => {
         setResult(data);
         // Only set rankAndName if not already set from certificate
-        setFormData(prev => ({
+        setFormData((prev) => ({
           ...prev,
-          rankAndName: prev.rankAndName || `${data.rank || ""} ${data.full_name || ""}`.trim()
+          rankAndName:
+            prev.rankAndName ||
+            `${data.rank || ""} ${data.full_name || ""}`.trim(),
         }));
         setLoading(false);
       })
@@ -151,7 +197,7 @@ export default function Certificate({ fromSuperAdmin = false }) {
 
   // Handle form field changes
   const handleChange = useCallback((field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
   }, []);
 
   // Validate form
@@ -174,9 +220,9 @@ export default function Certificate({ fromSuperAdmin = false }) {
   // Save new certificate
   const saveNewCertificate = async () => {
     if (!validateForm()) return null;
-    
+
     setIsSaving(true);
-    
+
     try {
       const certificateData = {
         pft_result_id: parseInt(id),
@@ -191,11 +237,13 @@ export default function Certificate({ fromSuperAdmin = false }) {
       const savedCert = await createCertificate(certificateData);
       setCertificate(savedCert);
       setIsEditing(false);
-      
+
       // Extract and set certificate number for display
       const numberPart = savedCert.certificate_number.split("HQ")[1];
-      
-      alert(`Certificate saved successfully!\nNumber: ${savedCert.certificate_number}`);
+
+      alert(
+        `Certificate saved successfully!\nNumber: ${savedCert.certificate_number}`,
+      );
       return savedCert;
     } catch (err) {
       alert("Failed to save certificate: " + err.message);
@@ -209,9 +257,9 @@ export default function Certificate({ fromSuperAdmin = false }) {
   const updateExistingCertificate = async () => {
     if (!validateForm()) return null;
     if (!certificate) return null;
-    
+
     setIsSaving(true);
-    
+
     try {
       const certificateData = {
         participated_in: formData.participatedIn,
@@ -221,15 +269,20 @@ export default function Certificate({ fromSuperAdmin = false }) {
         issued_month: formData.issuedMonth,
         issued_year: "20" + formData.issuedYear,
         // Allow updating personnel info too
-        personnel_name: formData.rankAndName.split(' ').slice(1).join(' '),
-        personnel_rank: formData.rankAndName.split(' ')[0]
+        personnel_name: formData.rankAndName.split(" ").slice(1).join(" "),
+        personnel_rank: formData.rankAndName.split(" ")[0],
       };
 
-      const updatedCert = await updateCertificate(certificate.id, certificateData);
+      const updatedCert = await updateCertificate(
+        certificate.id,
+        certificateData,
+      );
       setCertificate(updatedCert);
       setIsEditing(false);
-      
-      alert(`Certificate updated successfully!\nNumber: ${updatedCert.certificate_number}`);
+
+      alert(
+        `Certificate updated successfully!\nNumber: ${updatedCert.certificate_number}`,
+      );
       return updatedCert;
     } catch (err) {
       alert("Failed to update certificate: " + err.message);
@@ -261,13 +314,14 @@ export default function Certificate({ fromSuperAdmin = false }) {
   const cancelEditMode = () => {
     if (certificate) {
       setFormData({
-        rankAndName: `${certificate.personnel_rank || ""} ${certificate.personnel_name || ""}`.trim(),
+        rankAndName:
+          `${certificate.personnel_rank || ""} ${certificate.personnel_name || ""}`.trim(),
         participatedIn: certificate.participated_in || "",
         status: certificate.status || "",
         location: certificate.location || "",
         issuedDay: certificate.issued_day || "",
         issuedMonth: certificate.issued_month || "",
-        issuedYear: certificate.issued_year?.slice(-2) || ""
+        issuedYear: certificate.issued_year?.slice(-2) || "",
       });
     }
     setIsEditing(false);
@@ -333,64 +387,62 @@ export default function Certificate({ fromSuperAdmin = false }) {
   //   }
   // };
 
-
-
   const generatePDF = async () => {
-  const input = certRef.current;
-  if (!input) return;
+    const input = certRef.current;
+    if (!input) return;
 
-  const originalStyles = {
-    transform: input.style.transform,
-    width: input.style.width,
-    maxWidth: input.style.maxWidth,
-    height: input.style.height,
-    overflow: input.style.overflow,
+    const originalStyles = {
+      transform: input.style.transform,
+      width: input.style.width,
+      maxWidth: input.style.maxWidth,
+      height: input.style.height,
+      overflow: input.style.overflow,
+    };
+
+    try {
+      // ✅ Apply PDF mode (CSS handles layout)
+      input.classList.add("pdf-mode");
+
+      // ✅ Wait for fonts & layout
+      await document.fonts.ready;
+      await new Promise((r) => setTimeout(r, 300));
+
+      // ✅ Capture EXACT size (no forced width/height)
+      const canvas = await html2canvas(input, {
+        scale: 3, // higher quality
+        useCORS: true,
+        backgroundColor: "#FAF9F6",
+        scrollX: 0,
+        scrollY: 0,
+      });
+
+      const imgData = canvas.toDataURL("image/jpeg", 1.0);
+
+      const pdf = new jsPDF("p", "mm", "a4");
+
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+
+      const imgWidth = pageWidth - 20;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+      // ✅ DO NOT over-compress — keep proportions
+      pdf.addImage(imgData, "JPEG", 10, 10, imgWidth, imgHeight);
+
+      const certNum =
+        certificate?.certificate_number?.split("HQ")[1] || "DRAFT";
+
+      pdf.save(
+        `NAF_PFT_Certificate_${result?.svc_no || "PERSONNEL"}_${certNum}.pdf`,
+      );
+    } catch (err) {
+      console.error(err);
+      alert("Failed to generate PDF");
+    } finally {
+      input.classList.remove("pdf-mode");
+      Object.assign(input.style, originalStyles);
+    }
   };
-
-  try {
-    // ✅ Apply PDF mode (CSS handles layout)
-    input.classList.add("pdf-mode");
-
-    // ✅ Wait for fonts & layout
-    await document.fonts.ready;
-    await new Promise((r) => setTimeout(r, 300));
-
-    // ✅ Capture EXACT size (no forced width/height)
-    const canvas = await html2canvas(input, {
-      scale: 3, // higher quality
-      useCORS: true,
-      backgroundColor: "#FAF9F6",
-      scrollX: 0,
-      scrollY: 0,
-    });
-
-    const imgData = canvas.toDataURL("image/jpeg", 1.0);
-
-    const pdf = new jsPDF("p", "mm", "a4");
-
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const pageHeight = pdf.internal.pageSize.getHeight();
-
-    const imgWidth = pageWidth - 20;
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-    // ✅ DO NOT over-compress — keep proportions
-    pdf.addImage(imgData, "JPEG", 10, 10, imgWidth, imgHeight);
-
-    const certNum =
-      certificate?.certificate_number?.split("HQ")[1] || "DRAFT";
-
-    pdf.save(
-      `NAF_PFT_Certificate_${result?.svc_no || "PERSONNEL"}_${certNum}.pdf`
-    );
-  } catch (err) {
-    console.error(err);
-    alert("Failed to generate PDF");
-  } finally {
-    input.classList.remove("pdf-mode");
-    Object.assign(input.style, originalStyles);
-  }
-};
 
   // Send certificate via email
   // const sendCertificate = async () => {
@@ -460,7 +512,7 @@ export default function Certificate({ fromSuperAdmin = false }) {
   //     }
 
   //     const certNum = certificate?.certificate_number || "DRAFT";
-      
+
   //     const formDataObj = new FormData();
   //     formDataObj.append("email", result.email);
   //     formDataObj.append("file", pdfBlob, `NAF_PFT_Certificate_${certNum}.pdf`);
@@ -486,77 +538,76 @@ export default function Certificate({ fromSuperAdmin = false }) {
   //   }
   // };
 
-
   const sendCertificate = async () => {
-  if (!result?.email) {
-    alert("No email address found for this personnel.");
-    return;
-  }
-
-  setIsSending(true);
-
-  const input = certRef.current;
-  if (!input) {
-    setIsSending(false);
-    return;
-  }
-
-  try {
-    input.classList.add("pdf-mode");
-
-    await document.fonts.ready;
-    await new Promise((r) => setTimeout(r, 300));
-
-    const canvas = await html2canvas(input, {
-      scale: 3,
-      useCORS: true,
-      backgroundColor: "#FAF9F6",
-      scrollX: 0,
-      scrollY: 0,
-    });
-
-    const pdf = new jsPDF("p", "mm", "a4");
-
-    const imgData = canvas.toDataURL("image/jpeg", 1.0);
-
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const imgWidth = pageWidth - 20;
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-    pdf.addImage(imgData, "JPEG", 10, 10, imgWidth, imgHeight);
-
-    const pdfBlob = pdf.output("blob");
-
-    if (pdfBlob.size > 4.5 * 1024 * 1024) {
-      alert("PDF too large. Please download instead.");
+    if (!result?.email) {
+      alert("No email address found for this personnel.");
       return;
     }
 
-    const certNum = certificate?.certificate_number || "DRAFT";
+    setIsSending(true);
 
-    const formDataObj = new FormData();
-    formDataObj.append("email", result.email);
-    formDataObj.append("file", pdfBlob, `NAF_PFT_Certificate_${certNum}.pdf`);
-    formDataObj.append("personnel_name", result.full_name || "");
-    formDataObj.append("certificate_type", "pft_certificate");
-    formDataObj.append("certificate_number", certNum);
+    const input = certRef.current;
+    if (!input) {
+      setIsSending(false);
+      return;
+    }
 
-    const res = await fetch(`${API_BASE}/send-certificate-pdf`, {
-      method: "POST",
-      credentials: "include",
-      body: formDataObj,
-    });
+    try {
+      input.classList.add("pdf-mode");
 
-    if (!res.ok) throw new Error("Failed to send email");
+      await document.fonts.ready;
+      await new Promise((r) => setTimeout(r, 300));
 
-    alert(`Certificate sent successfully to ${result.email}`);
-  } catch (err) {
-    alert("Failed to send certificate: " + err.message);
-  } finally {
-    input.classList.remove("pdf-mode");
-    setIsSending(false);
-  }
-};
+      const canvas = await html2canvas(input, {
+        scale: 3,
+        useCORS: true,
+        backgroundColor: "#FAF9F6",
+        scrollX: 0,
+        scrollY: 0,
+      });
+
+      const pdf = new jsPDF("p", "mm", "a4");
+
+      const imgData = canvas.toDataURL("image/jpeg", 1.0);
+
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const imgWidth = pageWidth - 20;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+      pdf.addImage(imgData, "JPEG", 10, 10, imgWidth, imgHeight);
+
+      const pdfBlob = pdf.output("blob");
+
+      if (pdfBlob.size > 4.5 * 1024 * 1024) {
+        alert("PDF too large. Please download instead.");
+        return;
+      }
+
+      const certNum = certificate?.certificate_number || "DRAFT";
+
+      const formDataObj = new FormData();
+      formDataObj.append("email", result.email);
+      formDataObj.append("file", pdfBlob, `NAF_PFT_Certificate_${certNum}.pdf`);
+      formDataObj.append("personnel_name", result.full_name || "");
+      formDataObj.append("certificate_type", "pft_certificate");
+      formDataObj.append("certificate_number", certNum);
+
+      const res = await fetch(`${API_BASE}/send-certificate-pdf`, {
+        method: "POST",
+        credentials: "include",
+        body: formDataObj,
+      });
+
+      if (!res.ok) throw new Error("Failed to send email");
+
+      alert(`Certificate sent successfully to ${result.email}`);
+    } catch (err) {
+      alert("Failed to send certificate: " + err.message);
+    } finally {
+      input.classList.remove("pdf-mode");
+      setIsSending(false);
+    }
+  };
 
   const handleBack = () => {
     if (isSuperAdmin) {
@@ -570,15 +621,16 @@ export default function Certificate({ fromSuperAdmin = false }) {
   const getStatusLabel = (status) => {
     if (!status) return "";
     const map = {
-      'fit': 'Fit',
-      'not fit': 'Not Fit',
-      'not_fit': 'Not Fit',
-      'excused': 'Excused'
+      fit: "Fit",
+      "not fit": "Not Fit",
+      not_fit: "Not Fit",
+      excused: "Excused",
     };
     return map[status.toLowerCase()] || status;
   };
 
-  if (loading) return <div className="loading-text">Loading certificate...</div>;
+  if (loading)
+    return <div className="loading-text">Loading certificate...</div>;
   if (error) return <div className="error">{error}</div>;
   if (!result) return <div className="error">Record not found</div>;
 
@@ -590,34 +642,44 @@ export default function Certificate({ fromSuperAdmin = false }) {
       {/* Form Section */}
       <div className="certificate-form">
         <h2>
-          {isSaved && !isEditing ? "View PFT Certificate" : 
-           isSaved && isEditing ? "Edit PFT Certificate" : 
-           "Issue PFT Certificate"}
+          {isSaved && !isEditing
+            ? "View PFT Certificate"
+            : isSaved && isEditing
+              ? "Edit PFT Certificate"
+              : "Issue PFT Certificate"}
         </h2>
-        
+
         <p className="form-subtitle">
-          {isSaved && !isEditing 
-            ? `Certificate ${certificate.certificate_number} has been issued` 
-            : isSaved && isEditing 
-              ? "Make corrections to the certificate fields below" 
+          {isSaved && !isEditing
+            ? `Certificate ${certificate.certificate_number} has been issued`
+            : isSaved && isEditing
+              ? "Make corrections to the certificate fields below"
               : "Fill in the certificate details below"}
         </p>
 
         {/* Issuer Info Display */}
         {isSaved && certificate && (
-          <div className="issuer-info-box" style={{
-            background: '#f0f8ff',
-            padding: '10px',
-            borderRadius: '6px',
-            marginBottom: '15px',
-            fontSize: '0.85rem'
-          }}>
-            <p style={{margin: '0 0 5px 0'}}><strong>Originally issued by:</strong> {certificate.issuer_name} ({certificate.issuer_rank})</p>
-            {certificate.last_modified_by_name && certificate.last_modified_by_name !== certificate.issuer_name && (
-              <p style={{margin: 0, color: '#666'}}>
-                <strong>Last modified by:</strong> {certificate.last_modified_by_name}
-              </p>
-            )}
+          <div
+            className="issuer-info-box"
+            style={{
+              background: "#f0f8ff",
+              padding: "10px",
+              borderRadius: "6px",
+              marginBottom: "15px",
+              fontSize: "0.85rem",
+            }}
+          >
+            <p style={{ margin: "0 0 5px 0" }}>
+              <strong>Originally issued by:</strong> {certificate.issuer_name} (
+              {certificate.issuer_rank})
+            </p>
+            {certificate.last_modified_by_name &&
+              certificate.last_modified_by_name !== certificate.issuer_name && (
+                <p style={{ margin: 0, color: "#666" }}>
+                  <strong>Last modified by:</strong>{" "}
+                  {certificate.last_modified_by_name}
+                </p>
+              )}
           </div>
         )}
 
@@ -625,7 +687,9 @@ export default function Certificate({ fromSuperAdmin = false }) {
           <label>Certificate Number</label>
           <input
             type="text"
-            value={certificate?.certificate_number || "Will be generated on save"}
+            value={
+              certificate?.certificate_number || "Will be generated on save"
+            }
             readOnly
             className="readonly"
             style={{ backgroundColor: "#f0f0f0" }}
@@ -637,7 +701,9 @@ export default function Certificate({ fromSuperAdmin = false }) {
           <input
             type="text"
             value={formData.rankAndName}
-            onChange={(e) => isEditing && handleChange('rankAndName', e.target.value)}
+            onChange={(e) =>
+              isEditing && handleChange("rankAndName", e.target.value)
+            }
             placeholder="e.g. Flying Officer John Doe"
             readOnly={!isEditing}
             style={!isEditing ? { backgroundColor: "#f0f0f0" } : {}}
@@ -649,7 +715,9 @@ export default function Certificate({ fromSuperAdmin = false }) {
           <input
             type="text"
             value={formData.participatedIn}
-            onChange={(e) => isEditing && handleChange('participatedIn', e.target.value)}
+            onChange={(e) =>
+              isEditing && handleChange("participatedIn", e.target.value)
+            }
             placeholder="e.g. NAF Annual PFT 2026"
             readOnly={!isEditing}
             style={!isEditing ? { backgroundColor: "#f0f0f0" } : {}}
@@ -659,16 +727,22 @@ export default function Certificate({ fromSuperAdmin = false }) {
         <div className="form-group">
           <label>Confirmation Status *</label>
           <div className="checkbox-group">
-            {['fit', 'not fit', 'excused'].map((statusValue) => (
-              <label key={statusValue} className="checkbox-label" style={{
-                opacity: !isEditing ? 0.6 : 1,
-                cursor: isEditing ? 'pointer' : 'not-allowed'
-              }}>
+            {["fit", "not fit", "excused"].map((statusValue) => (
+              <label
+                key={statusValue}
+                className="checkbox-label"
+                style={{
+                  opacity: !isEditing ? 0.6 : 1,
+                  cursor: isEditing ? "pointer" : "not-allowed",
+                }}
+              >
                 <input
                   type="radio"
                   name="status"
                   checked={formData.status === statusValue}
-                  onChange={() => isEditing && handleChange('status', statusValue)}
+                  onChange={() =>
+                    isEditing && handleChange("status", statusValue)
+                  }
                   disabled={!isEditing}
                 />
                 <span>{getStatusLabel(statusValue)}</span>
@@ -682,7 +756,9 @@ export default function Certificate({ fromSuperAdmin = false }) {
           <input
             type="text"
             value={formData.location}
-            onChange={(e) => isEditing && handleChange('location', e.target.value)}
+            onChange={(e) =>
+              isEditing && handleChange("location", e.target.value)
+            }
             placeholder="e.g. NAF Base Abuja"
             readOnly={!isEditing}
             style={!isEditing ? { backgroundColor: "#f0f0f0" } : {}}
@@ -695,7 +771,9 @@ export default function Certificate({ fromSuperAdmin = false }) {
             <input
               type="text"
               value={formData.issuedDay}
-              onChange={(e) => isEditing && handleChange('issuedDay', e.target.value)}
+              onChange={(e) =>
+                isEditing && handleChange("issuedDay", e.target.value)
+              }
               readOnly={!isEditing}
               style={!isEditing ? { backgroundColor: "#f0f0f0" } : {}}
             />
@@ -705,7 +783,9 @@ export default function Certificate({ fromSuperAdmin = false }) {
             <input
               type="text"
               value={formData.issuedMonth}
-              onChange={(e) => isEditing && handleChange('issuedMonth', e.target.value)}
+              onChange={(e) =>
+                isEditing && handleChange("issuedMonth", e.target.value)
+              }
               readOnly={!isEditing}
               style={!isEditing ? { backgroundColor: "#f0f0f0" } : {}}
             />
@@ -715,7 +795,9 @@ export default function Certificate({ fromSuperAdmin = false }) {
             <input
               type="text"
               value={formData.issuedYear}
-              onChange={(e) => isEditing && handleChange('issuedYear', e.target.value)}
+              onChange={(e) =>
+                isEditing && handleChange("issuedYear", e.target.value)
+              }
               maxLength="2"
               readOnly={!isEditing}
               style={!isEditing ? { backgroundColor: "#f0f0f0" } : {}}
@@ -727,23 +809,23 @@ export default function Certificate({ fromSuperAdmin = false }) {
           <button onClick={handleBack} className="btn back-btn">
             ← Back
           </button>
-          
+
           {/* ✅ FIXED: Only show Edit button if user has edit permission */}
           {isSaved && !isEditing && canEditCertificate && (
-            <button 
-              onClick={enableEditMode} 
+            <button
+              onClick={enableEditMode}
               className="btn edit-btn"
-              style={{background: '#f59e0b'}}
+              style={{ background: "#f59e0b" }}
             >
               Edit Certificate
             </button>
           )}
 
           {isSaved && isEditing && (
-            <button 
-              onClick={cancelEditMode} 
+            <button
+              onClick={cancelEditMode}
               className="btn cancel-btn"
-              style={{background: '#6c757d'}}
+              style={{ background: "#6c757d" }}
               disabled={isSaving}
             >
               Cancel
@@ -752,62 +834,80 @@ export default function Certificate({ fromSuperAdmin = false }) {
 
           {/* ✅ FIXED: Only show Save button if user has issue/edit permission */}
           {(isEditing || !isSaved) && canModifyCertificate && (
-            <button 
-              onClick={handleSaveOrUpdate} 
+            <button
+              onClick={handleSaveOrUpdate}
               className="btn save-btn"
               disabled={isSaving}
               style={{
-                background: isSaved ? '#28a745' : '#0b3d91',
-                opacity: isSaving ? 0.7 : 1
+                background: isSaved ? "#28a745" : "#0b3d91",
+                opacity: isSaving ? 0.7 : 1,
               }}
             >
-              {isSaving ? 'Saving...' : isSaved ? 'Update Certificate' : 'Save Certificate'}
+              {isSaving
+                ? "Saving..."
+                : isSaved
+                  ? "Update Certificate"
+                  : "Save Certificate"}
             </button>
           )}
 
-          <button 
-            onClick={generatePDF} 
+          <button
+            onClick={generatePDF}
             className="btn pdf-btn"
             disabled={isSaving || (isEditing && hasUnsavedChanges)}
-            title={isEditing && hasUnsavedChanges ? "Save changes before downloading" : ""}
+            title={
+              isEditing && hasUnsavedChanges
+                ? "Save changes before downloading"
+                : ""
+            }
           >
             Download PDF
           </button>
-          
+
           <button
             onClick={sendCertificate}
             className="btn email-btn"
             disabled={isSending || isSaving || (isEditing && hasUnsavedChanges)}
-            title={isEditing && hasUnsavedChanges ? "Save changes before sending" : ""}
+            title={
+              isEditing && hasUnsavedChanges
+                ? "Save changes before sending"
+                : ""
+            }
           >
             {isSending ? "Sending..." : "Send to Email"}
           </button>
         </div>
-        
+
         {/* Status Messages */}
         {isSaved && !isEditing && (
-          <p style={{ 
-            marginTop: "10px", 
-            color: "#28a745", 
-            fontSize: "0.9rem",
-            textAlign: "center",
-            fontWeight: "600"
-          }}>
-            ✓ This certificate has been saved. 
-            {canEditCertificate && " Click \"Edit Certificate\" to make corrections."}
+          <p
+            style={{
+              marginTop: "10px",
+              color: "#28a745",
+              fontSize: "0.9rem",
+              textAlign: "center",
+              fontWeight: "600",
+            }}
+          >
+            ✓ This certificate has been saved.
+            {canEditCertificate &&
+              ' Click "Edit Certificate" to make corrections.'}
             {!canEditCertificate && " Contact an admin to make corrections."}
           </p>
         )}
-        
+
         {isEditing && (
-          <p style={{ 
-            marginTop: "10px", 
-            color: "#f59e0b", 
-            fontSize: "0.9rem",
-            textAlign: "center",
-            fontWeight: "600"
-          }}>
-            ⚠ You have unsaved changes. Click "{isSaved ? 'Update Certificate' : 'Save Certificate'}" to save.
+          <p
+            style={{
+              marginTop: "10px",
+              color: "#f59e0b",
+              fontSize: "0.9rem",
+              textAlign: "center",
+              fontWeight: "600",
+            }}
+          >
+            ⚠ You have unsaved changes. Click "
+            {isSaved ? "Update Certificate" : "Save Certificate"}" to save.
           </p>
         )}
       </div>
@@ -828,11 +928,13 @@ export default function Certificate({ fromSuperAdmin = false }) {
           <div className="certificate-content">
             <div className="cert-number-section">
               <div className="cert-number-full">
-                NAF/786/HQ<span className="cert-num-value">{certNumber || "______"}</span>
+                NAF/786/HQ
+                {/* <span className="cert-num-value">{certNumber || "______"}</span> */}
               </div>
-              <div className="cert-number-note">
-                (To identify the Comds/053 NAF CAMP)
-              </div>
+              {/* <div className="cert-number-note">
+                (To identify the comds/053 NAF CAMP)
+              </div> */}
+              <div className="cert-number-full">{certNumber || "______"}</div>
             </div>
             <div className="cert-logo">
               <img src={airForceLogo} alt="Nigerian Air Force" />
@@ -865,21 +967,29 @@ export default function Certificate({ fromSuperAdmin = false }) {
               <div className="cert-row">
                 <div className="cert-field full">
                   <span className="field-label">Participated in:</span>
-                  <span className="field-line">{formData.participatedIn || ""}</span>
+                  <span className="field-line">
+                    {formData.participatedIn || ""}
+                  </span>
                 </div>
               </div>
               <div className="cert-row confirmation-row">
                 <span className="field-label">and Confirmed:</span>
                 <div className="confirmation-boxes">
-                  <div className={`conf-box ${formData.status === 'fit' ? "checked" : ""}`}>
+                  <div
+                    className={`conf-box ${formData.status === "fit" ? "checked" : ""}`}
+                  >
                     <span>Fit</span>
                     <div className="box"></div>
                   </div>
-                  <div className={`conf-box ${formData.status === 'not fit' || formData.status === 'not_fit' ? "checked" : ""}`}>
+                  <div
+                    className={`conf-box ${formData.status === "not fit" || formData.status === "not_fit" ? "checked" : ""}`}
+                  >
                     <span>Not Fit</span>
                     <div className="box"></div>
                   </div>
-                  <div className={`conf-box ${formData.status === 'excused' ? "checked" : ""}`}>
+                  <div
+                    className={`conf-box ${formData.status === "excused" ? "checked" : ""}`}
+                  >
                     <span>Excused</span>
                     <div className="box"></div>
                   </div>
@@ -893,9 +1003,17 @@ export default function Certificate({ fromSuperAdmin = false }) {
               </div>
               <div className="cert-row issued-row">
                 <span className="issued-text">
-                  Issued on <span className="issued-line">{formData.issuedDay || "__________"}</span> day of{" "}
-                  <span className="issued-line">{formData.issuedMonth || "__________"}</span> 20
-                  <span className="issued-line">{formData.issuedYear || "____"}</span>
+                  Issued on{" "}
+                  <span className="issued-line">
+                    {formData.issuedDay || "__________"}
+                  </span>{" "}
+                  day of{" "}
+                  <span className="issued-line">
+                    {formData.issuedMonth || "_____"}
+                  </span>{" "}
+                  <span className="issued-line">
+                    20{formData.issuedYear || "____"}
+                  </span>
                 </span>
               </div>
             </div>
@@ -904,16 +1022,21 @@ export default function Certificate({ fromSuperAdmin = false }) {
                 <div className="signature-line">
                   <img src={aocSignatureImg} alt="AOC Signature" />
                 </div>
-                <div className="signature-label">AOC/Comd (Sign &amp; Date)</div>
+                <div className="signature-label">
+                  Chief of Administrstion (Sign)
+                </div>
               </div>
               <div className="seal-block">
                 <img src={seal} alt="Official Seal" />
               </div>
               <div className="signature-block">
                 <div className="signature-line">
-                  <img src={sportsSignatureImg} alt="Sports Officer Signature" />
+                  <img
+                    src={sportsSignatureImg}
+                    alt="Sports Officer Signature"
+                  />
                 </div>
-                <div className="signature-label">Sports Offr (Sign &amp; Date)</div>
+                <div className="signature-label">Director of Sport (Sign)</div>
               </div>
             </div>
           </div>

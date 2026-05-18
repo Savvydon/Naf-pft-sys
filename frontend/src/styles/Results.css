@@ -287,9 +287,9 @@ p.recommended-row {
   }
 }
 
-/* MOBILE RESPONSIVE (768px and below) */
+/* MOBILE RESPONSIVE (767px and below) - CHANGED FROM 768px */
 
-@media (max-width: 768px) {
+@media (max-width: 767px) {
   html {
     font-size: 15px;
   }
@@ -425,10 +425,13 @@ p.recommended-row {
     margin: 0.5rem 0;
     padding: 0.6rem;
     font-size: 0.95rem;
+    flex-direction: row;
+    align-items: center;
   }
 
   .results p b {
     font-size: 0.9rem;
+    min-width: 120px;
   }
 
   p.aggregate-row,
@@ -454,6 +457,17 @@ p.recommended-row {
 
   .results h2 {
     font-size: 1.2rem;
+  }
+
+  .results p {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .results p b {
+    min-width: 110px;
+    font-size: 0.85rem;
   }
 
   .btn {

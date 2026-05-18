@@ -98,146 +98,6 @@ export default function PersonnelDetails({ fromSuperAdmin = false }) {
     }
   };
 
-  // ---------- GENERATE PDF - EXACT WIDTH MATCH ----------
-  // const generatePDF = async (forEmail = false) => {
-  //   const input = resultsRef.current;
-  //   if (!input) return null;
-
-  //   // Save original styles
-  //   const originalStyles = {
-  //     position: input.style.position,
-  //     top: input.style.top,
-  //     left: input.style.left,
-  //     width: input.style.width,
-  //     maxWidth: input.style.maxWidth,
-  //     margin: input.style.margin,
-  //     transform: input.style.transform,
-  //   };
-
-  //   // Fix: Set exact width to match webpage (A4 width in pixels at 96 DPI)
-  //   const A4_WIDTH_MM = 210;
-  //   const MM_TO_PX = 3.779527559;
-  //   const targetWidthPx = Math.floor(A4_WIDTH_MM * MM_TO_PX); // ~794px
-
-  //   // Reset and set fixed width
-  //   input.style.position = "relative";
-  //   input.style.top = "0";
-  //   input.style.left = "0";
-  //   input.style.margin = "0";
-  //   input.style.transform = "none";
-  //   input.style.width = targetWidthPx + "px";
-  //   input.style.maxWidth = targetWidthPx + "px";
-
-  //   input.classList.add("pdf-mode");
-
-  //   // Wait for layout to settle
-  //   await new Promise((r) => setTimeout(r, 600));
-
-  //   try {
-  //     // Capture at exact width
-  //     const canvas = await html2canvas(input, {
-  //       scale: forEmail ? 1.2 : 2,
-  //       backgroundColor: "#ffffff",
-  //       useCORS: true,
-  //       allowTaint: true,
-  //       logging: false,
-  //       width: targetWidthPx,
-  //       windowWidth: targetWidthPx,
-  //       x: 0,
-  //       y: 0,
-  //       scrollX: 0,
-  //       scrollY: -window.scrollY,
-  //     });
-
-  //     const pdf = new jsPDF("p", "mm", "a4");
-
-  //     const pageWidth = pdf.internal.pageSize.getWidth();
-  //     const pageHeight = pdf.internal.pageSize.getHeight();
-
-  //     // Small margins
-  //     const marginX = 5;
-  //     const marginY = 5;
-  //     const usableWidth = pageWidth - marginX * 2;
-  //     const usableHeight = pageHeight - marginY * 2;
-
-  //     const imgWidth = canvas.width;
-  //     const imgHeight = canvas.height;
-
-  //     // Calculate exact ratio to fit width perfectly
-  //     const pdfImgWidth = usableWidth;
-  //     const pdfImgHeight = (imgHeight * usableWidth) / imgWidth;
-
-  //     // If content fits on one page
-  //     if (pdfImgHeight <= usableHeight) {
-  //       const imgData = canvas.toDataURL("image/jpeg", forEmail ? 0.7 : 0.9);
-  //       pdf.addImage(
-  //         imgData,
-  //         "JPEG",
-  //         marginX,
-  //         marginY,
-  //         pdfImgWidth,
-  //         pdfImgHeight,
-  //       );
-  //     } else {
-  //       // Multi-page with exact width preservation
-  //       let positionY = marginY;
-  //       let sourceY = 0;
-  //       const pageHeightPx = (usableHeight * imgWidth) / pdfImgWidth;
-
-  //       while (sourceY < imgHeight) {
-  //         if (sourceY > 0) {
-  //           pdf.addPage();
-  //           positionY = marginY;
-  //         }
-
-  //         const sliceHeight = Math.min(pageHeightPx, imgHeight - sourceY);
-  //         const tempCanvas = document.createElement("canvas");
-  //         tempCanvas.width = imgWidth;
-  //         tempCanvas.height = sliceHeight;
-
-  //         const ctx = tempCanvas.getContext("2d");
-  //         ctx.fillStyle = "#ffffff";
-  //         ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
-  //         ctx.drawImage(
-  //           canvas,
-  //           0,
-  //           sourceY,
-  //           imgWidth,
-  //           sliceHeight,
-  //           0,
-  //           0,
-  //           imgWidth,
-  //           sliceHeight,
-  //         );
-
-  //         const imgData = tempCanvas.toDataURL(
-  //           "image/jpeg",
-  //           forEmail ? 0.7 : 0.9,
-  //         );
-  //         const slicePdfHeight = (sliceHeight * pdfImgWidth) / imgWidth;
-
-  //         pdf.addImage(
-  //           imgData,
-  //           "JPEG",
-  //           marginX,
-  //           positionY,
-  //           pdfImgWidth,
-  //           slicePdfHeight,
-  //         );
-
-  //         sourceY += sliceHeight;
-  //       }
-  //     }
-
-  //     return pdf;
-  //   } finally {
-  //     // Restore original styles
-  //     Object.assign(input.style, originalStyles);
-  //     input.classList.remove("pdf-mode");
-  //   }
-  // };
-
-
   const generatePDF = async (forEmail = false) => {
     const input = resultsRef.current;
     if (!input) return null;
@@ -249,28 +109,22 @@ export default function PersonnelDetails({ fromSuperAdmin = false }) {
       left: input.style.left,
       width: input.style.width,
       maxWidth: input.style.maxWidth,
+      minWidth: input.style.minWidth,
       margin: input.style.margin,
       transform: input.style.transform,
     };
 
-    // Get the full content width (including any overflowing content)
-    const contentWidth = input.scrollWidth;
-    const contentHeight = input.scrollHeight;
+    // FIXED: Always use desktop width for consistent PDF output
+    const DESKTOP_WIDTH = 900; // Desktop viewport width
 
-    // A4 dimensions
-    const A4_WIDTH_MM = 210;
-    const MM_TO_PX = 3.779527559;
-    const a4WidthPx = Math.floor(A4_WIDTH_MM * MM_TO_PX); // ~794px
-
-    // Set exact dimensions for capture - use actual content width
     input.style.position = "absolute";
     input.style.top = "0";
     input.style.left = "0";
     input.style.margin = "0";
     input.style.transform = "none";
-    input.style.width = contentWidth + "px";
-    input.style.maxWidth = "none";
-    input.style.minWidth = contentWidth + "px";
+    input.style.width = DESKTOP_WIDTH + "px";
+    input.style.maxWidth = DESKTOP_WIDTH + "px";
+    input.style.minWidth = DESKTOP_WIDTH + "px";
 
     input.classList.add("pdf-mode");
 
@@ -278,7 +132,6 @@ export default function PersonnelDetails({ fromSuperAdmin = false }) {
     await new Promise((r) => setTimeout(r, 600));
 
     try {
-      // Capture at higher resolution for quality
       const captureScale = forEmail ? 2 : 3;
 
       const canvas = await html2canvas(input, {
@@ -287,10 +140,9 @@ export default function PersonnelDetails({ fromSuperAdmin = false }) {
         useCORS: true,
         allowTaint: true,
         logging: false,
-        width: contentWidth,
-        height: contentHeight,
-        windowWidth: contentWidth,
-        windowHeight: contentHeight,
+        width: DESKTOP_WIDTH,
+        // CRITICAL FIX: Force desktop viewport so media queries don't trigger mobile styles
+        windowWidth: DESKTOP_WIDTH,
         x: 0,
         y: 0,
         scrollX: 0,
@@ -299,10 +151,9 @@ export default function PersonnelDetails({ fromSuperAdmin = false }) {
 
       const pdf = new jsPDF("p", "mm", "a4");
 
-      const pageWidth = pdf.internal.pageSize.getWidth(); // 210mm
-      const pageHeight = pdf.internal.pageSize.getHeight(); // 297mm
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
 
-      // Margins
       const marginX = 5;
       const marginY = 2;
       const usableWidth = pageWidth - marginX * 2;
@@ -311,11 +162,9 @@ export default function PersonnelDetails({ fromSuperAdmin = false }) {
       const imgWidth = canvas.width;
       const imgHeight = canvas.height;
 
-      // Scale image to fit usable width while maintaining aspect ratio
       const pdfImgWidth = usableWidth;
       const pdfImgHeight = (imgHeight * usableWidth) / imgWidth;
 
-      // If content fits on one page
       if (pdfImgHeight <= usableHeight) {
         const imgData = canvas.toDataURL("image/jpeg", forEmail ? 0.85 : 0.95);
         pdf.addImage(
@@ -324,10 +173,9 @@ export default function PersonnelDetails({ fromSuperAdmin = false }) {
           marginX,
           marginY,
           pdfImgWidth,
-          pdfImgHeight
+          pdfImgHeight,
         );
       } else {
-        // Multi-page with proper scaling
         let positionY = marginY;
         let sourceY = 0;
         const pageHeightPx = (usableHeight * imgWidth) / pdfImgWidth;
@@ -355,10 +203,13 @@ export default function PersonnelDetails({ fromSuperAdmin = false }) {
             0,
             0,
             imgWidth,
-            sliceHeight
+            sliceHeight,
           );
 
-          const imgData = tempCanvas.toDataURL("image/jpeg", forEmail ? 0.85 : 0.95);
+          const imgData = tempCanvas.toDataURL(
+            "image/jpeg",
+            forEmail ? 0.85 : 0.95,
+          );
           const slicePdfHeight = (sliceHeight * pdfImgWidth) / imgWidth;
 
           pdf.addImage(
@@ -367,7 +218,7 @@ export default function PersonnelDetails({ fromSuperAdmin = false }) {
             marginX,
             positionY,
             pdfImgWidth,
-            slicePdfHeight
+            slicePdfHeight,
           );
 
           sourceY += sliceHeight;
@@ -376,7 +227,6 @@ export default function PersonnelDetails({ fromSuperAdmin = false }) {
 
       return pdf;
     } finally {
-      // Restore original styles
       Object.assign(input.style, originalStyles);
       input.classList.remove("pdf-mode");
     }

@@ -65,7 +65,7 @@
   background: white;
   padding: 20px;
   border-radius: 12px;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
   height: fit-content;
   position: sticky;
   top: 20px;
@@ -151,10 +151,22 @@
   font-size: 0.9rem;
 }
 
-.back-btn { background: #6c757d; color: white; }
-.pdf-btn { background: #28a745; color: white; }
-.email-btn { background: #17a2b8; color: white; }
-.email-btn:disabled { background: #6c757d; cursor: not-allowed; }
+.back-btn {
+  background: #6c757d;
+  color: white;
+}
+.pdf-btn {
+  background: #28a745;
+  color: white;
+}
+.email-btn {
+  background: #17a2b8;
+  color: white;
+}
+.email-btn:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+}
 
 /* Preview Section */
 .certificate-preview {
@@ -175,14 +187,14 @@
    ============================================ */
 
 .certificate-wrapper {
-  background-color: #FAF9F6;
+  background-color: #faf9f6;
   width: 850px;
   margin: 0 auto;
   position: relative;
-  font-family: 'Times New Roman', Times, serif;
+  font-family: "Times New Roman", Times, serif;
   box-sizing: border-box;
   min-height: 600px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
 }
 
 /* ============================================
@@ -196,7 +208,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  border: 40px solid #00308F;
+  border: 40px solid #00308f;
   pointer-events: none;
   z-index: 100;
 }
@@ -316,11 +328,11 @@
 /* PRESENTED TO */
 .cert-presented-to {
   text-align: center;
-  color: #B22222;
+  color: #b22222;
   font-size: 1.4rem;
   font-style: italic;
   margin: 0 0 5px 0;
-  font-family: 'Brush Script MT', 'Segoe Script', cursive;
+  font-family: "Brush Script MT", "Segoe Script", cursive;
   font-weight: 500;
 }
 
@@ -480,7 +492,7 @@
 }
 
 .signature-label {
-  font-family: 'Times New Roman', Times, serif;
+  font-family: "Times New Roman", Times, serif;
   font-weight: 600;
 }
 
@@ -513,13 +525,13 @@
   max-width: 850px !important;
   height: auto !important;
   overflow: visible !important;
-  background-color: #FAF9F6 !important;
+  background-color: #faf9f6 !important;
 }
 
 /* FIXED: PDF outer border 30px Air Force Blue */
 .pdf-mode .border-outer {
   border-width: 40px !important;
-  border: 40px solid #00308F !important;
+  border: 40px solid #00308f !important;
   top: 0 !important;
   left: 0 !important;
   right: 0 !important;
@@ -535,7 +547,6 @@
   right: 39px !important;
   bottom: 39px !important;
 }
-
 
 .pdf-mode .certificate-content {
   padding: 55px 40px 50px 40px !important;
@@ -565,11 +576,11 @@
 
 .pdf-mode .cert-presented-to {
   text-align: center;
-  color: #B22222;
+  color: #b22222;
   font-size: 1.4rem;
   font-style: italic;
   margin: 0 0 5px 0 !important;
-  font-family: 'Brush Script MT', 'Segoe Script', cursive;
+  font-family: "Brush Script MT", "Segoe Script", cursive;
   font-weight: 500;
 }
 
@@ -604,64 +615,70 @@
 }
 
 /* ============================================
-   RESPONSIVE DESIGN
+   RESPONSIVE DESIGN - DESKTOP CONSISTENT
    ============================================ */
 
+/* On smaller screens, stack the form and preview vertically */
 @media (max-width: 1200px) {
   .certificate-page {
     grid-template-columns: 1fr;
   }
-  
+
   .certificate-form {
     position: static;
   }
-  
-  .certificate-wrapper {
-    transform: scale(0.75);
-    transform-origin: top center;
-  }
 }
 
+/* On mobile, keep certificate at full desktop size with horizontal scroll */
 @media (max-width: 768px) {
+  .certificate-page {
+    padding: 10px;
+  }
+
+  .certificate-preview {
+    overflow-x: auto;
+    padding: 15px;
+    -webkit-overflow-scrolling: touch;
+  }
+
   .certificate-wrapper {
-    transform: scale(0.5);
-    width: 794px;
+    /* Keep desktop width - no scaling */
+    width: 850px;
+    min-width: 850px;
+    margin: 0;
   }
-  
+
+  /* Keep all desktop layout rules intact */
   .cert-row.three-cols {
-    grid-template-columns: 1fr;
-    gap: 15px;
+    grid-template-columns: 2fr 1.5fr 1.5fr;
+    gap: 25px;
   }
-  
+
   .confirmation-boxes {
-    flex-direction: column;
-    gap: 10px;
+    flex-direction: row;
+    gap: 50px;
   }
-  
+
   .cert-bottom {
-    flex-direction: column;
-    gap: 20px;
-    align-items: center;
+    flex-direction: row;
+    align-items: flex-end;
   }
-  
+
   .signature-block {
-    width: 100%;
+    width: 220px;
   }
-  
+
   .seal-block {
-    position: static;
-    transform: none;
-    order: -1;
-    bottom: auto;
-  }
-  
-  .watermark-text {
-    font-size: 8px;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: -10px;
   }
 }
 
 /* Loading and Error */
-.loading-text, .error {
+.loading-text,
+.error {
   text-align: center;
   padding: 60px;
   color: #666;
