@@ -25,6 +25,7 @@ export default function AdminLogin() {
     "Warrant Officer",
     "Master Warrant Officer",
     "Air Warrant Officer",
+    "Flying Officer",
     "Flight Lieutenant",
     "Squadron Leader",
     "Wing Commander",
