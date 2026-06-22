@@ -63,9 +63,6 @@ export default function AdminDetails() {
           <strong>Rank:</strong> {data.admin?.rank || "N/A"}
         </p>
         <p>
-          <strong>Email:</strong> {data.admin?.email || "N/A"}
-        </p>
-        <p>
           <strong>Role:</strong> {data.admin?.role || "admin"}
         </p>
         <p>
