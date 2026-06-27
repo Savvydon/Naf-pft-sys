@@ -97,12 +97,12 @@ export default function AnalyticsChart({ data, userRole = "admin" }) {
     const goodStepUp = records.filter(
       (r) =>
         (r.step_up_excess || 0) > 0 ||
-        r.step_up_status?.toLowerCase().includes("good"),
+        r.step_up_status?.toLowerCase().includes("excellent"),
     ).length;
     const goodPushUp = records.filter(
       (r) =>
         (r.push_up_excess || 0) > 0 ||
-        r.push_up_status?.toLowerCase().includes("good"),
+        r.push_up_status?.toLowerCase().includes("excellent"),
     ).length;
     const goodSitUp = records.filter(
       (r) =>

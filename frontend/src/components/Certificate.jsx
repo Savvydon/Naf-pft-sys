@@ -180,12 +180,15 @@ export default function Certificate({ fromSuperAdmin = false }) {
       .then((res) => res.json())
       .then((data) => {
         setResult(data);
-        // Only set rankAndName if not already set from certificate
         setFormData((prev) => ({
           ...prev,
           rankAndName:
             prev.rankAndName ||
             `${data.rank || ""} ${data.full_name || ""}`.trim(),
+          // ← NEW: Auto-populate participatedIn with year from PFT result
+          participatedIn:
+            prev.participatedIn ||
+            `Nigerian Air Force Annual Physical Fitness Test ${data.year || new Date().getFullYear()}`,
         }));
         setLoading(false);
       })
