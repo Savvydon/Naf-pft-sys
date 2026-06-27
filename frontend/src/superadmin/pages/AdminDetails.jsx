@@ -1,4 +1,3 @@
-// ============ FIXED AdminDetails.jsx ============
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import "../styles/superadmin.css";
@@ -31,7 +30,7 @@ export default function AdminDetails() {
       }
 
       const result = await res.json();
-      console.log("Admin details fetched:", result); // Debug log
+      console.log("Admin details fetched:", result);
       setData(result);
     } catch (err) {
       setError(err.message);
@@ -45,9 +44,11 @@ export default function AdminDetails() {
   if (error) return <div className="error">Error: {error}</div>;
   if (!data) return <div className="not-found">Admin not found</div>;
 
-  // FIXED: Ensure certificates array exists
+  // FIXED: Ensure arrays exist
   const certificates = data.certificates || [];
+  const assignedEvaluators = data.assigned_evaluators || [];
   const certificatesCount = data.certificates_count || certificates.length || 0;
+  const evaluatorsCount = assignedEvaluators.length || 0;
 
   return (
     <div className="superadmin-container">
@@ -74,7 +75,48 @@ export default function AdminDetails() {
             {certificatesCount}
           </span>
         </p>
+        {/* NEW: Assigned Evaluators Count */}
+        <p>
+          <strong>Assigned Evaluators:</strong>
+          <span
+            className={`badge ${evaluatorsCount > 0 ? "active" : "zero"}`}
+            style={{ marginLeft: "10px" }}
+          >
+            {evaluatorsCount}
+          </span>
+        </p>
       </div>
+
+      {/* NEW: Assigned Evaluators Section */}
+      <h3>Assigned Evaluators</h3>
+      {assignedEvaluators.length === 0 ? (
+        <div className="empty-state">
+          <p>No evaluators assigned to this admin yet.</p>
+        </div>
+      ) : (
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>S/N</th>
+              <th>Full Name</th>
+              <th>Service Number</th>
+              <th>Rank</th>
+            </tr>
+          </thead>
+          <tbody>
+            {assignedEvaluators.map((ev, index) => (
+              <tr key={ev.id}>
+                <td>
+                  <strong>{index + 1}</strong>
+                </td>
+                <td>{ev.full_name || "N/A"}</td>
+                <td>{ev.svc_no || "N/A"}</td>
+                <td>{ev.rank || "N/A"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
 
       {/* Certificates Issued History */}
       <h3>Certificates Issued History</h3>
