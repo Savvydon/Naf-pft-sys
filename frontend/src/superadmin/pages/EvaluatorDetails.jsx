@@ -219,6 +219,8 @@ export default function EvaluatorDetails() {
               <th>S/N</th>
               <th>Service No</th>
               <th>Name</th>
+              <th>Rank</th>        {/* ← NEW */}
+              <th>Unit</th>        {/* ← NEW */}
               <th>Year</th>
               <th>Grade</th>
               <th>Date</th>
@@ -230,6 +232,8 @@ export default function EvaluatorDetails() {
                 <td><strong>{index + 1}</strong></td>
                 <td>{eval_item.svc_no}</td>
                 <td>{eval_item.full_name}</td>
+                <td>{eval_item.rank || "N/A"}</td>      {/* ← NEW */}
+                <td>{eval_item.unit || "N/A"}</td>      {/* ← NEW */}
                 <td>{eval_item.year}</td>
                 <td>{eval_item.grade}</td>
                 <td>{new Date(eval_item.created_at).toLocaleDateString()}</td>

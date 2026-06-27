@@ -299,7 +299,7 @@
 
 #     return result
 
-# # ---------- GET SINGLE EVALUATOR DETAILS ----------
+# # ---------- GET SINGLE EVALUATOR DETAILS (FIXED) ----------
 # @router.get("/evaluators/{evaluator_id}")
 # def get_evaluator_details(
 #     evaluator_id: int,
@@ -318,9 +318,25 @@
 #         PFTResult.evaluator_id == evaluator_id
 #     ).order_by(PFTResult.created_at.desc()).all()
 
+#     # FIXED: Manually query the assigned admin instead of relying on lazy relationship
+#     assigned_admin = None
+#     if evaluator.assigned_admin_id:
+#         admin = db.query(User).filter(
+#             User.id == evaluator.assigned_admin_id,
+#             User.role == "admin"
+#         ).first()
+#         if admin:
+#             assigned_admin = {
+#                 "id": admin.id,
+#                 "svc_no": admin.svc_no,
+#                 "full_name": admin.full_name,
+#                 "rank": admin.rank,
+#                 "role": admin.role,
+#             }
+
 #     return {
 #         "evaluator": user_to_dict(evaluator),
-#         "assigned_admin": user_to_dict(evaluator.admin) if evaluator.admin else None,
+#         "assigned_admin": assigned_admin,
 #         "evaluations_count": len(evaluations),
 #         "evaluations": [
 #             {
@@ -560,6 +576,7 @@
 #     db.delete(result)
 #     db.commit()
 #     return {"message": f"PFT result {result_id} deleted successfully"}
+
 
 
 
@@ -908,6 +925,8 @@ def get_evaluator_details(
                 "id": eval.id,
                 "svc_no": eval.svc_no,
                 "full_name": eval.full_name,
+                "rank": eval.rank,           # ← ADDED
+                "unit": eval.unit,           # ← ADDED
                 "year": eval.year,
                 "grade": eval.grade,
                 "created_at": eval.created_at.isoformat() if eval.created_at else None
