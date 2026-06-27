@@ -87,21 +87,21 @@ class TokenData(BaseModel):
     svc_no: Optional[str] = None
 
 
-# LOGIN SCHEMA
+# ==================== SIMPLIFIED LOGIN SCHEMA ====================
 class UserLogin(BaseModel):
     svc_no: str
-    full_name: str
-    rank: str
     password: str
 
 
 # USER RESPONSE SCHEMA
 class UserOut(BaseModel):
+    id: int
     svc_no: str
     full_name: str
     rank: str
     role: str
     email: Optional[str] = None
+    assigned_admin_id: Optional[int] = None
     created_at: Optional[str] = None
     
     class Config:
@@ -180,3 +180,19 @@ class AdminCertificatesResponse(BaseModel):
     admin: UserOut
     certificates_count: int
     certificates: list[CertificateListItem]
+
+
+# ==================== ASSIGNMENT SCHEMAS ====================
+class AssignEvaluatorRequest(BaseModel):
+    evaluator_id: int
+    admin_id: int
+
+
+class EvaluatorWithAdmin(BaseModel):
+    id: int
+    svc_no: str
+    full_name: str
+    rank: str
+    assigned_admin_id: Optional[int] = None
+    assigned_admin_name: Optional[str] = None
+    evaluations_count: int
