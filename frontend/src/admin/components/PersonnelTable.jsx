@@ -247,12 +247,12 @@ export default function PersonnelTable({ data, onDelete }) {
                         </button>
                       )}
 
-                      <button
+                      {/* <button
                         className="delete-btn"
                         onClick={() => onDelete(p.id)}
                       >
                         Delete
-                      </button>
+                      </button> */}
                     </td>
                   </tr>
                 );
