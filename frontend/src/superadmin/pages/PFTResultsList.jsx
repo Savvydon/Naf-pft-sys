@@ -591,7 +591,7 @@ export default function PFTResultsList() {
             <thead>
               <tr>
                 <th>S/N</th>
-                <th>DB ID</th>
+                {/* <th>DB ID</th> */}
                 <th>Name</th>
                 <th>Service No</th>
                 <th>Year</th>
@@ -611,11 +611,11 @@ export default function PFTResultsList() {
                     <td>
                       <strong>{(page - 1) * itemsPerPage + index + 1}</strong>
                     </td>
-                    <td>
+                    {/* <td>
                       <span style={{ color: "#999", fontSize: "0.85em" }}>
                         #{r.id}
                       </span>
-                    </td>
+                    </td> */}
                     <td>{r.full_name}</td>
                     <td>{r.svc_no}</td>
                     <td>{r.year}</td>

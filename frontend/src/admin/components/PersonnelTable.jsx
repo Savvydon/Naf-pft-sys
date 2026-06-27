@@ -163,7 +163,7 @@ export default function PersonnelTable({ data, onDelete }) {
             <thead>
               <tr>
                 <th>S/N</th>
-                <th>ID</th>
+                {/* <th>ID</th> */}
                 <th>Name</th>
                 <th>Gender</th>
                 <th>Service No</th>
@@ -185,11 +185,11 @@ export default function PersonnelTable({ data, onDelete }) {
                     <td>
                       <strong>{startIndex + index + 1}</strong>
                     </td>
-                    <td>
+                    {/* <td>
                       <span style={{ color: "#999", fontSize: "0.85em" }}>
                         #{p.id}
                       </span>
-                    </td>
+                    </td> */}
                     <td>{p.full_name}</td>
                     <td>{p.sex}</td>
                     <td>{p.svc_no}</td>
