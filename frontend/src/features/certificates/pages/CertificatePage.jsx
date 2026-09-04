@@ -86,6 +86,12 @@ export default function CertificatePage({ fromSuperAdmin = false }) {
   const certRef = useRef(null);
   const { currentUser } = useAuth();
 
+  const fallbackListPath = fromSuperAdmin
+    ? "/superadmin/pft-results"
+    : "/admin/personnel";
+
+  const returnTo = location.state?.returnTo || fallbackListPath;
+
   // Core data states
   const [result, setResult] = useState(null);
   const [certificate, setCertificate] = useState(null);
@@ -461,11 +467,7 @@ export default function CertificatePage({ fromSuperAdmin = false }) {
   };
 
   const handleBack = () => {
-    if (isSuperAdmin) {
-      navigate("/superadmin/pft-results");
-    } else {
-      navigate("/admin/personnel");
-    }
+    navigate(returnTo);
   };
 
   // Get display status label

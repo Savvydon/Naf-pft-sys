@@ -1,5 +1,5 @@
 import "../styles/Admin.css";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useEffect, useState, useCallback } from "react";
 import { checkCertificateExists } from "../../../services/certificates";
 
@@ -43,6 +43,7 @@ const Pagination = ({ page, setPage, totalPages }) => {
 
 export default function PersonnelTable({ data, onDelete }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const [certStatus, setCertStatus] = useState({});
   const [page, setPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
@@ -104,8 +105,12 @@ export default function PersonnelTable({ data, onDelete }) {
     checkCertificates();
   }, [checkCertificates]);
 
+  const getReturnTo = () => `${location.pathname}${location.search}`;
+
   const handleIssue = (id) => {
-    navigate(`/admin/personnel/${id}/certificate`);
+    navigate(`/admin/personnel/${id}/certificate`, {
+      state: { returnTo: getReturnTo() },
+    });
   };
 
   const handleViewCert = (certId) => {
@@ -114,7 +119,9 @@ export default function PersonnelTable({ data, onDelete }) {
       (key) => certStatus[key].certificate_id === certId,
     );
     if (personnelId) {
-      navigate(`/admin/personnel/${personnelId}/certificate`);
+      navigate(`/admin/personnel/${personnelId}/certificate`, {
+        state: { returnTo: getReturnTo() },
+      });
     }
   };
 
@@ -136,7 +143,7 @@ export default function PersonnelTable({ data, onDelete }) {
           onChange={(e) => setSearchQuery(e.target.value)}
           className="search-input"
         />
-        <span className="search-icon"></span>
+        <span className="search-icon">🔍</span>
       </div>
 
       {/* List Meta */}
@@ -215,7 +222,11 @@ export default function PersonnelTable({ data, onDelete }) {
                     <td className="actions-cell">
                       <button
                         className="view-btn"
-                        onClick={() => navigate(`/admin/personnel/${p.id}`)}
+                        onClick={() =>
+                          navigate(`/admin/personnel/${p.id}`, {
+                            state: { returnTo: getReturnTo() },
+                          })
+                        }
                       >
                         View
                       </button>
@@ -223,7 +234,9 @@ export default function PersonnelTable({ data, onDelete }) {
                       <button
                         className="edit-btn"
                         onClick={() =>
-                          navigate(`/admin/personnel/${p.id}/edit`)
+                          navigate(`/admin/personnel/${p.id}/edit`, {
+                            state: { returnTo: getReturnTo() },
+                          })
                         }
                       >
                         Edit

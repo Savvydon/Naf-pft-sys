@@ -17,6 +17,12 @@ export default function PersonnelEditPage({ fromSuperAdmin = false }) {
   const isSuperAdmin =
     fromSuperAdmin || location.pathname.includes("/superadmin/");
 
+  const fallbackListPath = isSuperAdmin
+    ? "/superadmin/pft-results"
+    : "/admin/personnel";
+
+  const returnTo = location.state?.returnTo || fallbackListPath;
+
   const [formData, setFormData] = useState({
     year: "",
     full_name: "",
@@ -177,9 +183,13 @@ export default function PersonnelEditPage({ fromSuperAdmin = false }) {
 
       // Navigate to view the updated record with the new data
       if (isSuperAdmin) {
-        navigate(`/superadmin/pft-results/${id}`, { state: updatedRecord });
+        navigate(`/superadmin/pft-results/${id}`, {
+          state: { ...updatedRecord, returnTo },
+        });
       } else {
-        navigate(`/admin/personnel/${id}`, { state: updatedRecord });
+        navigate(`/admin/personnel/${id}`, {
+          state: { ...updatedRecord, returnTo },
+        });
       }
     } catch (err) {
       console.error("[EDIT ERROR]", err);
@@ -191,9 +201,13 @@ export default function PersonnelEditPage({ fromSuperAdmin = false }) {
 
   const handleCancel = () => {
     if (isSuperAdmin) {
-      navigate(`/superadmin/pft-results/${id}`);
+      navigate(`/superadmin/pft-results/${id}`, {
+        state: { returnTo },
+      });
     } else {
-      navigate(`/admin/personnel/${id}`);
+      navigate(`/admin/personnel/${id}`, {
+        state: { returnTo },
+      });
     }
   };
 

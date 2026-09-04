@@ -187,8 +187,15 @@ export default function PFTResultsListPage() {
     }
   };
 
+  const getReturnTo = () => {
+    const params = new URLSearchParams(searchParams);
+    return `/superadmin/pft-results${params.toString() ? `?${params.toString()}` : ""}`;
+  };
+
   const handleIssueCertificate = (id) => {
-    navigate(`/superadmin/pft-results/${id}/certificate`);
+    navigate(`/superadmin/pft-results/${id}/certificate`, {
+      state: { returnTo: getReturnTo() },
+    });
   };
 
   const handleViewCert = (certId) => {
@@ -196,16 +203,22 @@ export default function PFTResultsListPage() {
       (key) => certStatus[key].certificate_id === certId,
     );
     if (resultId) {
-      navigate(`/superadmin/pft-results/${resultId}/certificate`);
+      navigate(`/superadmin/pft-results/${resultId}/certificate`, {
+        state: { returnTo: getReturnTo() },
+      });
     }
   };
 
   const handleViewDetails = (id) => {
-    navigate(`/superadmin/pft-results/${id}`);
+    navigate(`/superadmin/pft-results/${id}`, {
+      state: { returnTo: getReturnTo() },
+    });
   };
 
   const handleEdit = (id) => {
-    navigate(`/superadmin/pft-results/${id}/edit`);
+    navigate(`/superadmin/pft-results/${id}/edit`, {
+      state: { returnTo: getReturnTo() },
+    });
   };
 
   const startIndex = (page - 1) * itemsPerPage;
@@ -230,7 +243,7 @@ export default function PFTResultsListPage() {
           onChange={(e) => setSearchQuery(e.target.value)}
           className="search-input"
         />
-        <span className="search-icon"></span>
+        <span className="search-icon">🔍</span>
       </div>
 
       <div className="list-meta">

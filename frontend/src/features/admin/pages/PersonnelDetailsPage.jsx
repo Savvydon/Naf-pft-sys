@@ -91,9 +91,9 @@ export default function PersonnelDetailsPage({ fromSuperAdmin = false }) {
       }
 
       if (isSuperAdmin) {
-        navigate("/superadmin/pft-results");
+        navigate(returnTo);
       } else {
-        navigate("/admin/personnel");
+        navigate(returnTo);
       }
     } catch (err) {
       alert("Delete failed: " + (err.message || "Unknown error"));
@@ -306,20 +306,26 @@ export default function PersonnelDetailsPage({ fromSuperAdmin = false }) {
     }
   };
 
+  const fallbackListPath = isSuperAdmin
+    ? "/superadmin/pft-results"
+    : "/admin/personnel";
+
+  // The list page passes the exact list URL (including ?page=...)
+  // when opening this record. Use it when the user clicks Back.
+  const returnTo = location.state?.returnTo || fallbackListPath;
+
   const handleBack = () => {
-    if (isSuperAdmin) {
-      navigate("/superadmin/pft-results");
-    } else {
-      navigate("/admin/personnel");
-    }
+    navigate(returnTo);
   };
 
   const handleEdit = () => {
-    if (isSuperAdmin) {
-      navigate(`/superadmin/pft-results/${id}/edit`);
-    } else {
-      navigate(`/admin/personnel/${id}/edit`);
-    }
+    const editPath = isSuperAdmin
+      ? `/superadmin/pft-results/${id}/edit`
+      : `/admin/personnel/${id}/edit`;
+
+    navigate(editPath, {
+      state: { returnTo },
+    });
   };
 
   if (loading) return <p className="loading-text">Loading record...</p>;
