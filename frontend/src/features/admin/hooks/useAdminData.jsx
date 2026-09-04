@@ -1,0 +1,64 @@
+import React from "react";
+import { useEffect, useState } from "react";
+import {
+  getAllPersonnel,
+  deletePersonnel,
+  searchPersonnel,
+} from "../services/adminApi.js";
+
+export function useAdminData() {
+  const [personnel, setPersonnel] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const loadPersonnel = async () => {
+    try {
+      setLoading(true);
+      const data = await getAllPersonnel();
+      setPersonnel(data);
+      setError(null);
+    } catch (err) {
+      console.error(err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const removePersonnel = async (id) => {
+    if (!window.confirm("Delete this record permanently?")) return;
+    try {
+      await deletePersonnel(id);
+      setPersonnel((prev) => prev.filter((p) => p.id !== id));
+    } catch (err) {
+      alert("Delete failed: " + err.message);
+    }
+  };
+
+  const search = async (query) => {
+    try {
+      setLoading(true);
+      const data = await searchPersonnel(query);
+      setPersonnel(data);
+      setError(null);
+    } catch (err) {
+      console.error(err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadPersonnel();
+  }, []);
+
+  return {
+    personnel,
+    loading,
+    error,
+    removePersonnel,
+    search,
+    refresh: loadPersonnel,
+  };
+}
