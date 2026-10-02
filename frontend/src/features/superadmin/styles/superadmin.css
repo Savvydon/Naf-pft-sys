@@ -839,3 +839,12 @@ a {
     display: table !important;
   }
 }
+
+.record-subtitle { margin: 4px 0 16px; color: #667085; font-size: .9rem; }
+.table-scroll { width: 100%; overflow-x: auto; }
+.personnel-name-cell { display: flex; flex-direction: column; gap: 3px; }
+.personnel-name-cell span, .years-inline { color: #667085; font-size: .78rem; }
+.grade-badge, .evaluation-count-badge { display: inline-flex; align-items: center; justify-content: center; min-width: 32px; padding: 4px 8px; border-radius: 999px; background: #eef4ff; color: #174ea6; font-weight: 600; font-size: .8rem; }
+.evaluation-count-badge { background: #f2f4f7; color: #344054; }
+.years-inline { display: block; margin-top: 4px; white-space: nowrap; }
+.organized-personnel-table { min-width: 1050px; }

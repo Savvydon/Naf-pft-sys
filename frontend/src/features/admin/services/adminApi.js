@@ -62,64 +62,34 @@ export async function loginAdmin(credentials) {
 
 // ==================== PFT RESULTS (Admin Only) ====================
 
-export async function getAllPersonnel() {
-  const response = await fetch(`${API_BASE}/api/pft-results`, {
+export async function getAllPersonnel(search = "") {
+  const query = search?.trim() ? `?search=${encodeURIComponent(search.trim())}` : "";
+  const response = await fetch(`${API_BASE}/api/personnel${query}`, {
     credentials: "include",
     headers: getHeaders(),
   });
 
   if (!response.ok) {
-    if (response.status === 403) {
-      throw new Error("Admin access required");
-    }
+    if (response.status === 403) throw new Error("Admin access required");
     await handleError(response);
   }
-
   return response.json();
 }
 
-export async function getPersonnelById(id) {
-  const response = await fetch(`${API_BASE}/api/pft-results/${id}`, {
+export async function getPersonnelRecord(id) {
+  const response = await fetch(`${API_BASE}/api/personnel-record/${id}`, {
     credentials: "include",
     headers: getHeaders(),
   });
-
   if (!response.ok) {
-    if (response.status === 404) {
-      throw new Error("Record not found");
-    }
+    if (response.status === 404) throw new Error("Personnel record not found");
     await handleError(response);
   }
-
   return response.json();
 }
 
-// ✅ CLIENT-SIDE SEARCH (avoids URL encoding issues)
-export async function searchPersonnel(svcNo) {
-  if (!svcNo?.trim()) return [];
-
-  const searchTerm = svcNo.trim();
-  console.log("[SEARCH] Client-side search for:", searchTerm);
-
-  // Get all records and filter
-  const allRecords = await getAllPersonnel();
-
-  // Flexible matching
-  const normalizedSearch = searchTerm.toUpperCase().replace(/\//g, "");
-
-  const filtered = allRecords.filter((record) => {
-    const recordSvcNo = (record.svc_no || "").toUpperCase();
-    const normalizedRecord = recordSvcNo.replace(/\//g, "");
-
-    return (
-      recordSvcNo === searchTerm.toUpperCase() ||
-      recordSvcNo.includes(searchTerm.toUpperCase()) ||
-      normalizedRecord === normalizedSearch
-    );
-  });
-
-  console.log("[SEARCH] Found", filtered.length, "of", allRecords.length);
-  return filtered;
+export async function searchPersonnel(query) {
+  return getAllPersonnel(query);
 }
 
 export async function deletePersonnel(id) {
