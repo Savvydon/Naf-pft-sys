@@ -3,7 +3,7 @@ import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { API_BASE } from "../../../config/env.js";
 import "../styles/superadmin.css";
 
-export default function PFTResultsListPage() {
+export default function PFTResultsListPage({ adminMode = false }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -18,7 +18,8 @@ export default function PFTResultsListPage() {
     try {
       setLoading(true);
       const suffix = search.trim() ? `?search=${encodeURIComponent(search.trim())}` : "";
-      const response = await fetch(`${API_BASE}/superadmin/personnel${suffix}`, { credentials: "include" });
+      const endpoint = `${API_BASE}/api/personnel${suffix}`;
+      const response = await fetch(endpoint, { credentials: "include" });
       if (!response.ok) throw new Error(`Failed to fetch personnel: ${response.status}`);
       setPersonnel(await response.json());
       setError(null);
@@ -29,7 +30,7 @@ export default function PFTResultsListPage() {
     }
   };
 
-  useEffect(() => { fetchPersonnel(query); }, []);
+  useEffect(() => { fetchPersonnel(query); }, [adminMode]);
 
   const handleSearch = (value) => {
     setQuery(value);
@@ -40,7 +41,7 @@ export default function PFTResultsListPage() {
     fetchPersonnel(value);
   };
 
-  const totalPages = Math.ceil(personnel.length / itemsPerPage);
+  const totalPages = Math.max(1, Math.ceil(personnel.length / itemsPerPage));
   const paginated = useMemo(() => personnel.slice((page - 1) * itemsPerPage, page * itemsPerPage), [personnel, page]);
 
   const goPage = (nextPage) => {
@@ -54,7 +55,7 @@ export default function PFTResultsListPage() {
 
   return (
     <div className="superadmin-container">
-      <h2>Personnel Records</h2>
+      <h2>{adminMode ? "PFT Results" : "PFT Results"}</h2>
       <p className="record-subtitle">One personnel record per service number, containing the complete PFT evaluation history.</p>
       <div className="search-container">
         <input
@@ -105,7 +106,7 @@ export default function PFTResultsListPage() {
                       <small className="years-inline">{p.years?.join(", ")}</small>
                     </td>
                     <td>
-                      <button className="view-btn" onClick={() => navigate(`/superadmin/pft-results/${p.id}`, { state: { returnTo: `${location.pathname}${location.search}` } })}>View Record</button>
+                      <button className="view-btn" onClick={() => navigate(`${adminMode ? "/admin/pft-results" : "/superadmin/pft-results"}/${p.id}`, { state: { returnTo: `${location.pathname}${location.search}` } })}>View Record</button>
                     </td>
                   </tr>
                 ))}

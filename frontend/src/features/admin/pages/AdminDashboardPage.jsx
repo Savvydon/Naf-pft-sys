@@ -61,6 +61,13 @@ export default function AdminDashboardPage() {
             You are logged in as an Admin. You can manage personnel records, view analytics, 
             and issue certificates.
           </p>
+          <button
+            type="button"
+            onClick={() => navigate("/admin/pft-results")}
+            style={{ marginTop: "15px", padding: "10px 16px", cursor: "pointer" }}
+          >
+            View PFT Results
+          </button>
         </div>
       </div>
     </div>

@@ -28,7 +28,7 @@ export default function PersonnelDetailsPage({ fromSuperAdmin = false }) {
     try {
       setLoading(true);
       const endpoint = isSuperAdmin
-        ? `${API_BASE}/superadmin/personnel-record/${id}`
+        ? `${API_BASE}/api/personnel-record/${id}`
         : `${API_BASE}/api/personnel-record/${id}`;
       const response = await fetch(endpoint, { credentials: "include" });
       if (!response.ok) throw new Error(`Failed to load personnel record: ${response.status}`);
@@ -51,7 +51,7 @@ export default function PersonnelDetailsPage({ fromSuperAdmin = false }) {
     [record, selectedId],
   );
 
-  const returnTo = location.state?.returnTo || (isSuperAdmin ? "/superadmin/pft-results" : "/admin/personnel");
+  const returnTo = location.state?.returnTo || (isSuperAdmin ? "/superadmin/pft-results" : "/admin/pft-results");
 
   const generatePDF = async (forEmail = false) => {
     const input = resultsRef.current;
@@ -155,12 +155,12 @@ export default function PersonnelDetailsPage({ fromSuperAdmin = false }) {
   };
 
   const openCertificate = () => {
-    const base = isSuperAdmin ? "/superadmin/pft-results" : "/admin/personnel";
+    const base = isSuperAdmin ? "/superadmin/pft-results" : "/admin/pft-results";
     navigate(`${base}/${selected.id}/certificate`, { state: { returnTo: location.pathname + location.search } });
   };
 
   const editEvaluation = () => {
-    const base = isSuperAdmin ? "/superadmin/pft-results" : "/admin/personnel";
+    const base = isSuperAdmin ? "/superadmin/pft-results" : "/admin/pft-results";
     navigate(`${base}/${selected.id}/edit`, { state: { returnTo: location.pathname + location.search } });
   };
 

@@ -36,6 +36,9 @@ export default function AdminSidebar() {
           <Link to="/admin/personnel" onClick={() => setIsOpen(false)}>
             Personnel Records
           </Link>
+          <Link to="/admin/pft-results" onClick={() => setIsOpen(false)}>
+            PFT Results
+          </Link>
         </nav>
       </div>
     </>
