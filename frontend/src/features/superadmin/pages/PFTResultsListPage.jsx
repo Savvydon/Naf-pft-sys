@@ -18,7 +18,7 @@ export default function PFTResultsListPage({ adminMode = false }) {
     try {
       setLoading(true);
       const suffix = search.trim() ? `?search=${encodeURIComponent(search.trim())}` : "";
-      const endpoint = `${API_BASE}/api/personnel${suffix}`;
+      const endpoint = `${API_BASE}${adminMode ? "/api/personnel" : "/superadmin/personnel"}${suffix}`;
       const response = await fetch(endpoint, { credentials: "include" });
       if (!response.ok) throw new Error(`Failed to fetch personnel: ${response.status}`);
       setPersonnel(await response.json());

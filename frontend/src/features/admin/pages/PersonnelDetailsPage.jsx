@@ -28,7 +28,7 @@ export default function PersonnelDetailsPage({ fromSuperAdmin = false }) {
     try {
       setLoading(true);
       const endpoint = isSuperAdmin
-        ? `${API_BASE}/api/personnel-record/${id}`
+        ? `${API_BASE}/superadmin/personnel-record/${id}`
         : `${API_BASE}/api/personnel-record/${id}`;
       const response = await fetch(endpoint, { credentials: "include" });
       if (!response.ok) throw new Error(`Failed to load personnel record: ${response.status}`);

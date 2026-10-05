@@ -76,6 +76,26 @@ export async function getAllPersonnel(search = "") {
   return response.json();
 }
 
+
+export async function getSuperAdminPersonnel(search = "") {
+  const query = search?.trim() ? `?search=${encodeURIComponent(search.trim())}` : "";
+  const response = await fetch(`${API_BASE}/superadmin/personnel${query}`, {
+    credentials: "include",
+    headers: getHeaders(),
+  });
+  if (!response.ok) await handleError(response);
+  return response.json();
+}
+
+export async function getSuperAdminPersonnelRecord(id) {
+  const response = await fetch(`${API_BASE}/superadmin/personnel-record/${id}`, {
+    credentials: "include",
+    headers: getHeaders(),
+  });
+  if (!response.ok) await handleError(response);
+  return response.json();
+}
+
 export async function getPersonnelRecord(id) {
   const response = await fetch(`${API_BASE}/api/personnel-record/${id}`, {
     credentials: "include",
