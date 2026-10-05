@@ -92,10 +92,6 @@ export default function App() {
         <Route path="/admin/dashboard" element={<AdminDashboard />} />
         <Route path="/admin/analytics" element={<AdminAnalytics />} />
         <Route path="/admin/personnel" element={<PersonnelList />} />
-        <Route path="/admin/pft-results" element={<PFTResultsList adminMode={true} />} />
-        <Route path="/admin/pft-results/:id" element={<PersonnelDetails fromSuperAdmin={false} />} />
-        <Route path="/admin/pft-results/:id/edit" element={<PersonnelEdit fromSuperAdmin={false} />} />
-        <Route path="/admin/pft-results/:id/certificate" element={<Certificate fromSuperAdmin={false} />} />
 
         {/* Personnel / Result Detail & Edit */}
         <Route path="/admin/personnel/:id" element={<PersonnelDetails fromSuperAdmin={false} />} />

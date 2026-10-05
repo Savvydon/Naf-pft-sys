@@ -1,127 +1,376 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { API_BASE } from "../../../config/env.js";
+import React from "react";
+import { useEffect, useState, useCallback } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import "../styles/superadmin.css";
+import { checkCertificateExists } from "../../../services/certificates";
 
-export default function PFTResultsListPage({ adminMode = false }) {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const [personnel, setPersonnel] = useState([]);
+
+
+// Pagination Component
+const Pagination = ({ page, setPage, totalPages }) => {
+  if (totalPages <= 1) return null;
+
+  const pages = [];
+  for (let i = 1; i <= totalPages; i++) {
+    pages.push(
+      <button
+        key={i}
+        onClick={() => setPage(i)}
+        className={`page-btn ${page === i ? "active" : ""}`}
+      >
+        {i}
+      </button>
+    );
+  }
+
+  return (
+    <div className="pagination">
+      <button
+        onClick={() => setPage(page - 1)}
+        disabled={page === 1}
+        className="page-btn"
+      >
+        ← Prev
+      </button>
+      {pages}
+      <button
+        onClick={() => setPage(page + 1)}
+        disabled={page === totalPages}
+        className="page-btn"
+      >
+        Next →
+      </button>
+    </div>
+  );
+};
+
+export default function PFTResultsListPage() {
+  const [results, setResults] = useState([]);
+  const [filteredResults, setFilteredResults] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [query, setQuery] = useState(searchParams.get("q") || "");
-  const page = Math.max(1, parseInt(searchParams.get("page"), 10) || 1);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [certStatus, setCertStatus] = useState({});
+  const [loadingCerts, setLoadingCerts] = useState(false);
+  const navigate = useNavigate();
+
+  // FIX: Use URL search params to persist page number
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Read page from URL, default to 1
+  const pageFromUrl = parseInt(searchParams.get("page"), 10);
+  const [page, setPage] = useState(
+    !isNaN(pageFromUrl) && pageFromUrl > 0 ? pageFromUrl : 1
+  );
+
   const itemsPerPage = 10;
 
-  const fetchPersonnel = async (search = "") => {
+  // FIX: Sync URL when page changes
+  const handlePageChange = (newPage) => {
+    setPage(newPage);
+    setSearchParams({ page: newPage.toString() });
+  };
+
+  // Fetch all PFT results
+  useEffect(() => {
+    fetchResults();
+  }, []);
+
+  // FIXED: Check certificate status with better implementation
+  const checkCertificates = useCallback(async (records) => {
+    if (!records || records.length === 0) return;
+
+    setLoadingCerts(true);
+    const newCertStatus = {};
+
+    await Promise.all(
+      records.map(async (r) => {
+        try {
+          const result = await checkCertificateExists(r.id);
+          newCertStatus[r.id] = result;
+        } catch (err) {
+          console.error(`Failed to check certificate for ${r.id}:`, err);
+          newCertStatus[r.id] = { exists: false };
+        }
+      }),
+    );
+
+    setCertStatus(newCertStatus);
+    setLoadingCerts(false);
+  }, []);
+
+  // Check certificates when results change
+  useEffect(() => {
+    checkCertificates(results);
+  }, [results, checkCertificates]);
+
+  // Filter results when search changes
+  useEffect(() => {
+    if (searchQuery.trim() === "") {
+      setFilteredResults(results);
+    } else {
+      const query = searchQuery.toLowerCase().trim();
+      const filtered = results.filter(
+        (r) =>
+          r.full_name?.toLowerCase().includes(query) ||
+          r.svc_no?.toLowerCase().includes(query) ||
+          r.year?.toString().includes(query) ||
+          r.grade?.toLowerCase().includes(query) ||
+          r.evaluator_name?.toLowerCase().includes(query),
+      );
+      setFilteredResults(filtered);
+    }
+    // FIX: Only reset page to 1 when search query changes, not when navigating back
+    const currentTotalPages = Math.ceil(
+      (searchQuery.trim() === "" ? results.length : filteredResults.length) / itemsPerPage
+    );
+    if (page > currentTotalPages && currentTotalPages > 0) {
+      setPage(1);
+      setSearchParams({ page: "1" });
+    }
+  }, [searchQuery, results]);
+
+  // FIX: Ensure URL is in sync when component mounts (for navigation back)
+  useEffect(() => {
+    const urlPage = searchParams.get("page");
+    if (!urlPage) {
+      setSearchParams({ page: page.toString() });
+    }
+  }, []);
+
+  const fetchResults = async () => {
     try {
       setLoading(true);
-      const suffix = search.trim() ? `?search=${encodeURIComponent(search.trim())}` : "";
-      const endpoint = `${API_BASE}${adminMode ? "/api/personnel" : "/superadmin/personnel"}${suffix}`;
-      const response = await fetch(endpoint, { credentials: "include" });
-      if (!response.ok) throw new Error(`Failed to fetch personnel: ${response.status}`);
-      setPersonnel(await response.json());
-      setError(null);
+      const res = await fetch(`${API_BASE}/superadmin/pft-results`, {
+        credentials: "include",
+      });
+
+      if (!res.ok) throw new Error("Failed to fetch results");
+
+      const data = await res.json();
+      setResults(data);
+      setFilteredResults(data);
     } catch (err) {
-      setError(err.message || "Failed to load personnel");
+      console.error(err);
+      setError(err.message || "Failed to load results");
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { fetchPersonnel(query); }, [adminMode]);
+  const handleDelete = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this result?")) return;
 
-  const handleSearch = (value) => {
-    setQuery(value);
-    const next = new URLSearchParams(searchParams);
-    next.set("page", "1");
-    if (value.trim()) next.set("q", value.trim()); else next.delete("q");
-    setSearchParams(next);
-    fetchPersonnel(value);
+    try {
+      const res = await fetch(`${API_BASE}/superadmin/pft-results/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+
+      if (!res.ok) throw new Error("Delete failed");
+
+      const updated = results.filter((r) => r.id !== id);
+      setResults(updated);
+      setFilteredResults(
+        updated.filter(
+          (r) =>
+            searchQuery.trim() === "" ||
+            r.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            r.svc_no?.toLowerCase().includes(searchQuery.toLowerCase()),
+        ),
+      );
+
+      alert("Result deleted successfully");
+    } catch (err) {
+      alert("Error: " + err.message);
+    }
   };
 
-  const totalPages = Math.max(1, Math.ceil(personnel.length / itemsPerPage));
-  const paginated = useMemo(() => personnel.slice((page - 1) * itemsPerPage, page * itemsPerPage), [personnel, page]);
-
-  const goPage = (nextPage) => {
-    const next = new URLSearchParams(searchParams);
-    next.set("page", String(nextPage));
-    setSearchParams(next);
+  const getReturnTo = () => {
+    const params = new URLSearchParams(searchParams);
+    return `/superadmin/pft-results${params.toString() ? `?${params.toString()}` : ""}`;
   };
 
-  if (loading) return <div className="loading">Loading personnel records...</div>;
+  const handleIssueCertificate = (id) => {
+    navigate(`/superadmin/pft-results/${id}/certificate`, {
+      state: { returnTo: getReturnTo() },
+    });
+  };
+
+  const handleViewCert = (certId) => {
+    const resultId = Object.keys(certStatus).find(
+      (key) => certStatus[key].certificate_id === certId,
+    );
+    if (resultId) {
+      navigate(`/superadmin/pft-results/${resultId}/certificate`, {
+        state: { returnTo: getReturnTo() },
+      });
+    }
+  };
+
+  const handleViewDetails = (id) => {
+    navigate(`/superadmin/pft-results/${id}`, {
+      state: { returnTo: getReturnTo() },
+    });
+  };
+
+  const handleEdit = (id) => {
+    navigate(`/superadmin/pft-results/${id}/edit`, {
+      state: { returnTo: getReturnTo() },
+    });
+  };
+
+  const startIndex = (page - 1) * itemsPerPage;
+  const paginatedData = filteredResults.slice(
+    startIndex,
+    startIndex + itemsPerPage,
+  );
+  const totalPages = Math.ceil(filteredResults.length / itemsPerPage);
+
+  if (loading) return <div className="loading">Loading results...</div>;
   if (error) return <div className="error">Error: {error}</div>;
 
   return (
     <div className="superadmin-container">
-      <h2>{adminMode ? "PFT Results" : "PFT Results"}</h2>
-      <p className="record-subtitle">One personnel record per service number, containing the complete PFT evaluation history.</p>
+      <h2>All PFT Results</h2>
+
       <div className="search-container">
         <input
-          type="search"
-          placeholder="Search by name, service number, rank, unit or year"
-          value={query}
-          onChange={(e) => handleSearch(e.target.value)}
+          type="text"
+          placeholder="Search by name, service no, year, grade, or evaluator..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
           className="search-input"
         />
+        <span className="search-icon">🔍</span>
       </div>
 
-      {paginated.length === 0 ? (
-        <div className="empty-state"><p>No personnel records found.</p></div>
+      <div className="list-meta">
+        {filteredResults.length === 0 ? (
+          <span>No records found</span>
+        ) : (
+          <span>
+            Showing {startIndex + 1}–
+            {Math.min(startIndex + itemsPerPage, filteredResults.length)} of{" "}
+            {filteredResults.length} result
+            {filteredResults.length !== 1 ? "s" : ""}
+            {loadingCerts && " (checking certificates...)"}
+          </span>
+        )}
+      </div>
+
+      {filteredResults.length === 0 ? (
+        <div className="empty-state">
+          <p>No PFT results found.</p>
+        </div>
       ) : (
         <>
-          <div className="table-scroll">
-            <table className="data-table organized-personnel-table">
-              <thead>
-                <tr>
-                  <th>S/N</th>
-                  <th>Personnel</th>
-                  <th>Service No</th>
-                  <th>Unit</th>
-                  <th>Latest PFT</th>
-                  <th>Score</th>
-                  <th>Grade</th>
-                  <th>Evaluations</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {paginated.map((p, index) => (
-                  <tr key={p.svc_no}>
-                    <td><strong>{(page - 1) * itemsPerPage + index + 1}</strong></td>
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>S/N</th>
+                {/* <th>DB ID</th> */}
+                <th>Name</th>
+                <th>Service No</th>
+                <th>Year</th>
+                <th>Grade</th>
+                <th>Evaluator</th>
+                <th>Certificate</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {paginatedData.map((r, index) => {
+                const certInfo = certStatus[r.id];
+                const hasCert = certInfo?.exists;
+
+                return (
+                  <tr key={r.id}>
                     <td>
-                      <div className="personnel-name-cell">
-                        <strong>{p.full_name || "—"}</strong>
-                        <span>{p.rank || "—"}{p.sex ? ` · ${p.sex}` : ""}</span>
-                      </div>
+                      <strong>{(page - 1) * itemsPerPage + index + 1}</strong>
                     </td>
-                    <td>{p.svc_no}</td>
-                    <td>{p.unit || "—"}</td>
-                    <td>{p.latest_year || "—"}</td>
-                    <td>{p.latest_aggregate ?? "—"}</td>
-                    <td><span className="grade-badge">{p.latest_grade || "—"}</span></td>
+                    {/* <td>
+                      <span style={{ color: "#999", fontSize: "0.85em" }}>
+                        #{r.id}
+                      </span>
+                    </td> */}
+                    <td>{r.full_name}</td>
+                    <td>{r.svc_no}</td>
+                    <td>{r.year}</td>
+                    <td>{r.grade}</td>
                     <td>
-                      <span className="evaluation-count-badge">{p.evaluation_count}</span>
-                      <small className="years-inline">{p.years?.join(", ")}</small>
+                      {r.evaluator_name} ({r.evaluator_rank})
                     </td>
                     <td>
-                      <button className="view-btn" onClick={() => navigate(`${adminMode ? "/admin/pft-results" : "/superadmin/pft-results"}/${p.id}`, { state: { returnTo: `${location.pathname}${location.search}` } })}>View Record</button>
+                      {hasCert ? (
+                        <span
+                          className="cert-badge issued"
+                          onClick={() =>
+                            handleViewCert(certInfo.certificate_id)
+                          }
+                          style={{ cursor: "pointer" }}
+                          title={`Certificate: ${certInfo.certificate_number}`}
+                        >
+                          ✓ {certInfo.certificate_number}
+                        </span>
+                      ) : (
+                        <span className="cert-badge none">—</span>
+                      )}
+                    </td>
+                    <td className="actions">
+                      <button
+                        onClick={() => handleViewDetails(r.id)}
+                        className="view-btn"
+                      >
+                        View
+                      </button>
+                      <button
+                        onClick={() => handleEdit(r.id)}
+                        className="edit-btn"
+                      >
+                        Edit
+                      </button>
+                      {hasCert ? (
+                        <button
+                          onClick={() =>
+                            handleViewCert(certInfo.certificate_id)
+                          }
+                          className="view-cert-btn"
+                        >
+                          View Cert
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleIssueCertificate(r.id)}
+                          className="issue-btn"
+                        >
+                          Issue Cert
+                        </button>
+                      )}
+                      <button
+                        onClick={() => handleDelete(r.id)}
+                        className="delete-btn"
+                      >
+                        Delete
+                      </button>
                     </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          {totalPages > 1 && (
-            <div className="pagination">
-              <button className="page-btn" disabled={page === 1} onClick={() => goPage(page - 1)}>Prev</button>
-              <span className="page-btn active">{page} / {totalPages}</span>
-              <button className="page-btn" disabled={page === totalPages} onClick={() => goPage(page + 1)}>Next</button>
-            </div>
-          )}
+                );
+              })}
+            </tbody>
+          </table>
+
+          <Pagination page={page} setPage={handlePageChange} totalPages={totalPages} />
         </>
       )}
+
+      <button
+        onClick={() => navigate("/superadmin/dashboard")}
+        className="back-btn"
+      >
+        ← Back to Dashboard
+      </button>
     </div>
   );
 }
